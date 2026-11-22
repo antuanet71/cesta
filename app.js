@@ -423,7 +423,7 @@ function showWhere(p) {
 }
 function vozAnalyze(text, mode) {
   const f = F();
-  return V.parse(text).map(it => {
+  return V.parse(text, f.productos).map(it => {
     const sup = it.en ? V.findByName(supers(), it.en) : null;
     const name = sup || !it.en ? it.name : it.full;
     const per = it.para ? V.findByName(personas(), it.para) : null;

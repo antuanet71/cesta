@@ -63,7 +63,7 @@ main{padding:14px 10px calc(20px + env(safe-area-inset-bottom,0px));display:flex
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   function pinta() {
     var V = window.CestaVoz, dic = {}, nuevos = [];
-    if (V) V.parse(ta.value).forEach(function (it) {
+    if (V) V.parse(ta.value, prods).forEach(function (it) {
       var m = V.match(it.name, prods);
       if (m.exact) dic[m.exact.nombre] = (dic[m.exact.nombre] || 0) + it.qty;
       else nuevos.push({ n: it.name.charAt(0).toUpperCase() + it.name.slice(1), q: it.qty, dudas: m.options.length });
@@ -96,26 +96,38 @@ main{padding:14px 10px calc(20px + env(safe-area-inset-bottom,0px));display:flex
   document.getElementById('listo').addEventListener('click', function (e) { e.preventDefault(); parar(); volver(true); });
   document.getElementById('cancelar').addEventListener('click', function (e) { e.preventDefault(); parar(); volver(false); });
 
-  /* ---- micrófono ---- */
-  var SR = window.SpeechRecognition || window.webkitSpeechRecognition, rec = null;
-  function parar() { if (rec) { try { rec.stop(); } catch (e) {} } }
+  /* ---- micrófono: sigue escuchando entre pausas hasta que lo pares ---- */
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition, rec = null, escuchando = false, mudos = 0;
+  function parar() { escuchando = false; if (rec) { try { rec.stop(); } catch (e) {} } mic.classList.remove('live'); }
   if (!SR) { mic.style.display = 'none'; est.textContent = 'Este navegador no deja dictar aquí: usa el micrófono del teclado.'; return; }
-  function empezar() {
-    if (rec) { parar(); return; }
-    rec = new SR(); rec.lang = 'es-ES'; rec.interimResults = true; rec.continuous = false;
-    var base = ta.value.trim();
+  function arranca() {
+    var base = ta.value.trim().replace(/,\s*$/, ''), oido = false;
+    rec = new SR(); rec.lang = 'es-ES'; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
     rec.onresult = function (e) {
       var t = ''; for (var i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
       t = t.trim(); if (!t) return;
-      ta.value = (base ? base.replace(/,\s*$/, '') + ', ' : '') + t; pinta();
+      oido = true; mudos = 0;
+      ta.value = (base ? base + ', ' : '') + t; pinta();
     };
     rec.onerror = function (e) {
-      est.innerHTML = /not-allowed|service-not-allowed/.test(e.error)
-        ? '<span class="err">Hay que dar permiso al micrófono: candado de la barra de direcciones › Permisos › Micrófono.</span>'
-        : e.error === 'no-speech' ? 'No te he oído. Toca el micrófono otra vez.' : '<span class="err">No ha funcionado (' + e.error + '). Prueba otra vez o usa el teclado.</span>';
+      if (/not-allowed|service-not-allowed/.test(e.error)) { escuchando = false; est.innerHTML = '<span class="err">Hay que dar permiso al micrófono: candado de la barra de direcciones › Permisos › Micrófono.</span>'; }
+      else if (e.error !== 'no-speech' && e.error !== 'aborted') { escuchando = false; est.innerHTML = '<span class="err">No ha funcionado (' + e.error + '). Prueba otra vez o usa el teclado.</span>'; }
     };
-    rec.onend = function () { rec = null; mic.classList.remove('live'); if (/Escuchando/.test(est.textContent)) est.textContent = 'Toca el micrófono para seguir, o Listo.'; };
-    try { rec.start(); mic.classList.add('live'); est.textContent = 'Escuchando…'; } catch (e) { rec = null; }
+    rec.onend = function () {
+      rec = null;
+      if (!oido) mudos++;
+      // Cada pausa cierra una frase: se separa con una coma y se vuelve a escuchar
+      if (escuchando && mudos < 3) { setTimeout(function () { if (escuchando) arranca(); }, 120); return; }
+      escuchando = false; mic.classList.remove('live');
+      est.textContent = mudos >= 3 ? 'Me he parado porque no oía nada. Toca el micrófono para seguir.' : 'Toca el micrófono para seguir, o Listo.';
+    };
+    try { rec.start(); } catch (e) { rec = null; escuchando = false; mic.classList.remove('live'); }
+  }
+  function empezar() {
+    if (escuchando) { parar(); est.textContent = 'Parado. Toca el micrófono para seguir, o Listo.'; return; }
+    escuchando = true; mudos = 0; mic.classList.add('live');
+    est.textContent = 'Escuchando… di los productos con pausas. Toca el micrófono para parar.';
+    arranca();
   }
   mic.addEventListener('click', empezar);
   empezar();

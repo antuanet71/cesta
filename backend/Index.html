@@ -177,10 +177,43 @@ function key(s) { return words(s).filter(w => !STOP.has(w)).join(' '); }
 const NUM = { un: 1, uno: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10, once: 11, doce: 12, quince: 15, veinte: 20, par: 2, docena: 12 };
 const FILL = /^(y |e |tambien |ademas |luego |hay que comprar |hay que |tenemos que comprar |necesitamos |necesito |falta |faltan |compra |comprar |apunta |anota |pon |añade |anade |mete |quiero |queremos |algo de |un poco de |unos |unas |el |la |los |las )+/;
 const UNIT = /^(kilos?|kg|gramos?|g|litros?|l|paquetes?|botellas?|botes?|latas?|bolsas?|cajas?|bandejas?|barras?|tarros?|briks?|bricks?|packs?|garrafas?|rollos?|piezas?|unidades?|docenas?|medias? docenas?) (de )?/;
-function parse(text) {
+// Al dictar seguido no hay comas: «manzanas peras dos leches papel higiénico».
+// Se trocea buscando nombres del catálogo y del diccionario; lo desconocido seguido va junto.
+const QW = /^(\d+|un|uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce|quince|veinte|par|docena|media)$/;
+const UW = /^(kilos?|kg|gramos?|litros?|paquetes?|botellas?|botes?|latas?|bolsas?|cajas?|bandejas?|barras?|tarros?|briks?|bricks?|packs?|garrafas?|rollos?|piezas?|unidades?|docenas?|de|par)$/;
+function splitRun(part, productos) {
+  const ws = part.split(' ').filter(Boolean);
+  if (ws.length < 2) return [part];
+  const keys = new Set(productos.filter(p => p.activo !== false).map(p => key(p.nombre)));
+  if (keys.has(key(part))) return [part];
+  const known = (a) => { if (STOP.has(strip(a[0])) || STOP.has(strip(a[a.length - 1]))) return false; const k = key(a.join(' ')); return k && (keys.has(k) || phrases().some(ph => ph.ws.join(' ') === k)); };
+  const out = []; let cur = [], pre = [], unk = false, lastKnown = false;
+  const flush = () => { if (cur.length) out.push(cur.join(' ')); cur = []; unk = false; };
+  for (let i = 0; i < ws.length; i++) {
+    const w = strip(ws[i]);
+    if ((w === 'para' || w === 'en' || w === 'del') && i + 1 < ws.length && (cur.length || out.length)) {
+      if (!cur.length) cur = out.pop().split(' ');
+      cur.push(ws[i], ws[i + 1]); i++; unk = false; continue;
+    }
+    if (QW.test(w) || (pre.length && UW.test(w))) { flush(); lastKnown = false; pre.push(ws[i]); continue; }
+    let len = 0;
+    for (let n = Math.min(5, ws.length - i); n >= 1; n--) if (known(ws.slice(i, i + n))) { len = n; break; }
+    if (len) { flush(); cur = pre.concat(ws.slice(i, i + len)); pre = []; i += len - 1; flush(); lastKnown = true; continue; }
+    // «queso de cabra», «leche entera»: lo que sigue a un producto conocido es una variante suya
+    if (!unk && lastKnown && !pre.length && out.length) { cur = out.pop().split(' '); unk = true; lastKnown = false; cur.push(ws[i]); continue; }
+    lastKnown = false;
+    if (!unk) { flush(); cur = pre; pre = []; unk = true; }
+    cur.push(ws[i]);
+  }
+  if (pre.length) cur = cur.concat(pre);
+  flush();
+  return out.length ? out : [part];
+}
+function parse(text, productos) {
   const t = String(text || '').replace(/\s+/g, ' ').trim();
   if (!t) return [];
-  const parts = t.split(/\s*(?:,|;|\.|\n|\by\b(?=\s)|\be\b(?=\s+[aeiouáéíóú])|\bademás\b|\btambién\b)\s*/i).map(x => x.trim()).filter(Boolean);
+  let parts = t.split(/\s*(?:,|;|\.|\n|\by\b(?=\s)|\be\b(?=\s+[aeiouáéíóú])|\bademás\b|\btambién\b)\s*/i).map(x => x.trim()).filter(Boolean);
+  if (productos) parts = [].concat.apply([], parts.map(x => splitRun(x, productos)));
   const out = [];
   parts.forEach(raw => {
     let s = raw.trim(), lower = strip(s);
@@ -341,7 +374,7 @@ function findByName(list, name) {
   return list.find(x => key(x.nombre) === k) || list.find(x => key(x.nombre).startsWith(k) || k.startsWith(key(x.nombre))) || null;
 }
 
-window.CestaVoz = { parse, match, classify, findByName, key, strip };
+window.CestaVoz = { parse, match, classify, findByName, key, strip, splitRun };
 })();
 
 </script>
@@ -771,7 +804,7 @@ function showWhere(p) {
 }
 function vozAnalyze(text, mode) {
   const f = F();
-  return V.parse(text).map(it => {
+  return V.parse(text, f.productos).map(it => {
     const sup = it.en ? V.findByName(supers(), it.en) : null;
     const name = sup || !it.en ? it.name : it.full;
     const per = it.para ? V.findByName(personas(), it.para) : null;
