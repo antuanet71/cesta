@@ -120,6 +120,18 @@ html{scroll-behavior:smooth}
   </nav>
 </header>
 
+<section class="frame" id="video" style="--c:var(--accent)">
+  <span class="ft">Vídeo de 90 segundos</span>
+  <div class="cols">
+    <div>
+      <h2>Todo Cesta en un vídeo</h2>
+      <p>Si prefieres verlo de una vez: todas las funciones, casi sin leer. Dale al play.</p>
+      <p><a href="v/cesta-90s.mp4" download>Descargar el vídeo</a> para pasarlo por WhatsApp.</p>
+    </div>
+    <figure class="phone" style="margin:0"><video class="full" src="v/cesta-90s.mp4" poster="v/cesta-90s.jpg" controls playsinline preload="none" style="aspect-ratio:9/16" aria-label="Vídeo de 90 segundos con todas las funciones de Cesta"></video></figure>
+  </div>
+</section>
+
 <!-- 1. Primeros pasos -->
 <section class="frame" id="empezar" style="--c:var(--accent)">
   <span class="ft">Primeros pasos</span>
@@ -322,7 +334,7 @@ html{scroll-behavior:smooth}
 
 <script>
 (function () {
-  var vids = [].slice.call(document.querySelectorAll('video'));
+  var vids = [].slice.call(document.querySelectorAll('video:not(.full)'));
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reduce || !('IntersectionObserver' in window)) { vids.forEach(function (v) { v.controls = true; }); return; }
   var io = new IntersectionObserver(function (es) {
