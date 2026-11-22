@@ -31,6 +31,8 @@ const SEED_PRODUCTS = {
 };
 
 /* ---------------- la app ---------------- */
+function appUrl() { try { return ScriptApp.getService().getUrl() || ''; } catch (e) { return ''; } }
+
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('Index')
     .setTitle('Cesta')
@@ -189,7 +191,7 @@ function productsToSheet(st) {
 function readState(ss, user) {
   const migrated = migrateProductHeaders(ss);
   const st = {
-    id: 'fam', nombre: ss.getName().replace(/^Cesta\s*[·\-:]\s*/i, ''), hojaUrl: ss.getUrl(), user: user,
+    id: 'fam', nombre: ss.getName().replace(/^Cesta\s*[·\-:]\s*/i, ''), hojaUrl: ss.getUrl(), appUrl: appUrl(), user: user,
     categorias: read(tab(ss, 'Categorias')), productos: read(tab(ss, 'Productos')), personas: read(tab(ss, 'Personas')),
     supers: read(tab(ss, 'Supers')), lista: read(tab(ss, 'Lista'))
   };

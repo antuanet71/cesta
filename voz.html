@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cesta · Dictar</title>
+<style>
+:root{--bg:#F4F6F2;--surface:#fff;--ink:#15302A;--muted:#62736C;--line:#DCE3DD;--accent:#1F7A55;--accent-ink:#fff;--danger:#C8372D;color-scheme:light}
+@media (prefers-color-scheme: dark){:root{--bg:#111D19;--surface:#16231F;--ink:#E6EFEA;--muted:#9AB0A7;--line:#2A3B35;--accent:#4CC08D;--accent-ink:#0B1A14;color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:18px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;gap:16px;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));max-width:640px;margin:0 auto}
+h1{font-size:22px;margin:0}
+p{margin:0;color:var(--muted);font-size:15px}
+textarea{width:100%;min-height:140px;border:1.5px solid var(--line);border-radius:12px;padding:12px;background:var(--surface);color:var(--ink);font:inherit;resize:vertical}
+.mic{align-self:center;width:132px;height:132px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);font-size:52px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.mic.live{background:var(--danger);color:#fff;animation:pulse 1.2s infinite}
+@keyframes pulse{50%{transform:scale(1.07)}}
+#estado{text-align:center;font-weight:700;color:var(--ink)}
+.row{display:flex;gap:10px}
+.btn{flex:1;border:0;border-radius:12px;padding:14px;font:inherit;font-weight:800;text-align:center;text-decoration:none}
+.pri{background:var(--accent);color:var(--accent-ink)}
+.sec{background:var(--surface);color:var(--muted);border:1.5px solid var(--line)}
+.err{color:var(--danger);font-weight:700}
+</style>
+</head>
+<body>
+<h1 id="titulo">Dictar la lista</h1>
+<button class="mic" id="mic" aria-label="Hablar">🎤</button>
+<div id="estado">Toca el micrófono y di los productos</div>
+<textarea id="texto" placeholder="Por ejemplo: dos leches, pan, plátanos para Lucía y lejía en Lidl"></textarea>
+<p>Puedes hablar varias veces: se va añadiendo. También puedes corregir el texto.</p>
+<div class="row"><a class="btn sec" id="cancelar" href="#">Cancelar</a><a class="btn pri" id="listo" href="#">Listo</a></div>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var modo = q.get('modo') === 'productos' ? 'productos' : 'lista';
+  var vuelta = q.get('vuelta') || '';
+  // Solo se vuelve a la app de la hoja (Apps Script)
+  if (!/^https:\/\/script\.google\.com\/[^\s]*$/.test(vuelta)) vuelta = '';
+  var ta = document.getElementById('texto'), mic = document.getElementById('mic'), est = document.getElementById('estado');
+  document.getElementById('titulo').textContent = modo === 'lista' ? 'Dictar la lista' : 'Dictar productos nuevos';
+  ta.value = q.get('texto') || '';
+  function volver(conTexto) {
+    if (!vuelta) { est.innerHTML = '<span class="err">No sé a qué app volver. Abre la Cesta y vuelve a intentarlo.</span>'; return; }
+    var u = vuelta + (vuelta.indexOf('?') >= 0 ? '&' : '?') + (conTexto ? 'dictado=' + encodeURIComponent(ta.value.trim()) + '&modo=' + modo : 'modo=' + modo);
+    location.replace(u);
+  }
+  document.getElementById('listo').addEventListener('click', function (e) { e.preventDefault(); parar(); volver(true); });
+  document.getElementById('cancelar').addEventListener('click', function (e) { e.preventDefault(); parar(); volver(false); });
+
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition, rec = null;
+  if (!SR) { mic.style.display = 'none'; est.textContent = 'Este navegador no deja dictar aquí: usa el micrófono del teclado.'; ta.focus(); return; }
+  function parar() { if (rec) { try { rec.stop(); } catch (e) {} } }
+  function empezar() {
+    if (rec) { parar(); return; }
+    rec = new SR(); rec.lang = 'es-ES'; rec.interimResults = true; rec.continuous = false;
+    var base = ta.value.trim();
+    rec.onresult = function (e) {
+      var t = ''; for (var i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+      t = t.trim(); if (!t) return;
+      ta.value = (base ? base.replace(/,\s*$/, '') + ', ' : '') + t;
+    };
+    rec.onerror = function (e) {
+      est.innerHTML = /not-allowed|service-not-allowed/.test(e.error)
+        ? '<span class="err">Hay que dar permiso al micrófono. Toca el candado de la barra de direcciones › Permisos › Micrófono.</span>'
+        : e.error === 'no-speech' ? 'No te he oído. Toca el micrófono otra vez.' : '<span class="err">No ha funcionado (' + e.error + '). Prueba otra vez o usa el teclado.</span>';
+    };
+    rec.onend = function () { rec = null; mic.classList.remove('live'); if (/Escuchando/.test(est.textContent)) est.textContent = 'Toca el micrófono para seguir, o Listo.'; };
+    try { rec.start(); mic.classList.add('live'); est.textContent = 'Escuchando…'; } catch (e) { rec = null; }
+  }
+  mic.addEventListener('click', empezar);
+  empezar(); // si el navegador lo permite sin tocar, empieza ya
+})();
+</script>
+</body>
+</html>

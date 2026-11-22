@@ -43,7 +43,7 @@ Un toque añade, cada toque más suma uno, y con doble toque (o manteniendo puls
 - En **Organizar** también puedes añadir productos («Nuevo»), dictar productos nuevos y tocar **Clasificar** para que proponga cambios de categoría (útil al crear una categoría nueva, por ejemplo Carnicería).
 - Si añades algo que ya existe, te dice en qué categoría está y lo resalta.
 - Tiendas que no son supermercados (Frutería 🍎, Pescadería 🐟, Carnicería 🥩, Panadería 🥖, Farmacia 💊, Droguería 🧴): Ajustes › Supermercados y tiendas › + Nuevo. Para quitar un súper o tienda, tócalo › ✕ Quitar.
-- Si el botón «Hablar» no funciona dentro de Google, usa el micrófono del teclado del móvil en el cuadro de texto.
+- **Hablar**: Google no deja usar el micrófono dentro de su marco, así que «Hablar» abre la página `voz.html` (en GitHub Pages: `https://antuanet71.github.io/cesta/voz.html`), donde sí funciona, y al tocar «Listo» vuelve a la app con lo dictado. Sirve para todas las familias. La primera vez el navegador pide permiso para el micrófono. Si no funcionase, el micrófono del teclado del móvil también vale.
 
 ## Editar a mano en la hoja
 

@@ -45,6 +45,8 @@ const SHOPS = {
 };
 const isEmoji = l => !!l && !BRANDS[l] && /[^\x00-\x7F]/.test(l);
 const V = window.CestaVoz;
+/* Dentro de Google el micrófono está bloqueado: se dicta en esta página y vuelve a la app con el texto */
+const VOZ_URL = 'https://antuanet71.github.io/cesta/voz.html';
 const cap = t => { t = String(t || '').trim(); return t ? t[0].toUpperCase() + t.slice(1) : t; };
 const PALETTE = ['#3B6FD8', '#D9467A', '#E08A1E', '#2E9E6A', '#7A5BD6', '#0E9AA7', '#C8372D', '#8A6B4E', '#6B7A75', '#D4A20B', '#1E8E57', '#0050AA'];
 
@@ -179,6 +181,7 @@ function adopt(state) {
   if (st.user) S.user = st.user;
   S.pending.forEach(p => applyOp(st, p.op, S.user && S.user.email));
   S.fam = st; LS.set('fam', st);
+  if (vozBack) setTimeout(openVozBack, 0);
 }
 async function refresh() {
   if (S.inflight) return;
@@ -430,6 +433,27 @@ function vozAnalyze(text, mode) {
     return o;
   });
 }
+function vozOutUrl() {
+  const sh = S.sheet || {};
+  return VOZ_URL + '?modo=' + (sh.mode || 'lista') + '&texto=' + encodeURIComponent(sh.text || '') + '&vuelta=' + encodeURIComponent(F().appUrl || '');
+}
+// Al volver de la página de dictado, la URL trae ?dictado=…&modo=…
+let vozBack = null;
+if (GAS && google.script.url) google.script.url.getLocation(loc => {
+  const p = (loc && loc.parameter) || {};
+  if (p.modo == null && p.dictado == null) return;
+  vozBack = { mode: p.modo === 'productos' ? 'productos' : 'lista', text: p.dictado || '' };
+  try { google.script.history.replace(null, {}, ''); } catch (_) {}
+  openVozBack();
+});
+function openVozBack() {
+  if (!vozBack || !S.fam) return;
+  const b = vozBack; vozBack = null;
+  if (b.mode === 'productos') { S.editCat = true; S.view = 'catalog'; }
+  S.sheet = { type: 'voz', mode: b.mode, step: 'input', text: b.text, items: [] };
+  if (b.text.trim()) { const items = vozAnalyze(b.text, b.mode); if (items.length) { S.sheet.items = items; S.sheet.step = 'review'; } }
+  render();
+}
 const vozNeeds = o => !o.skip && !o.pid && (!o.isNew || !o.cat);
 function vVoz() {
   const sh = S.sheet, lista = sh.mode === 'lista';
@@ -438,7 +462,7 @@ function vVoz() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     return `<div class="scrim" data-act="closeSheet"><div class="sheet" data-stop="1"><h3>${title}</h3>
       <textarea class="in" id="vozText" placeholder="${lista ? 'Por ejemplo: dos leches, pan, plátanos para Lucía y lejía en Lidl' : 'Por ejemplo: champú, merluza, papel de aluminio'}">${esc(sh.text)}</textarea>
-      <div class="row" style="margin-top:10px">${SR ? `<button class="mic${sh.listening ? ' live' : ''}" style="margin:0;padding:10px 14px" data-act="vozMic">${sh.listening ? '● Escuchando…' : '🎤 Hablar'}</button>` : ''}<span style="flex:1"></span><button class="btn ghost" data-act="closeSheet">Cancelar</button><button class="btn pri" data-act="vozGo">Seguir</button></div>
+      <div class="row" style="margin-top:10px">${GAS ? (F().appUrl ? `<a class="mic" id="vozOut" target="_top" style="margin:0;padding:10px 14px;text-decoration:none" href="${esc(vozOutUrl())}">🎤 Hablar</a>` : '') : SR ? `<button class="mic${sh.listening ? ' live' : ''}" style="margin:0;padding:10px 14px" data-act="vozMic">${sh.listening ? '● Escuchando…' : '🎤 Hablar'}</button>` : ''}<span style="flex:1"></span><button class="btn ghost" data-act="closeSheet">Cancelar</button><button class="btn pri" data-act="vozGo">Seguir</button></div>
       <p class="hint" style="text-align:left">Separa con comas o con «y». Si el botón Hablar no funciona, usa el micrófono del teclado.${lista ? ' Puedes decir cantidades, «para» alguien y «en» un súper.' : ''}</p></div></div>`;
   }
   const rows = sh.items.map((o, i) => {
@@ -706,7 +730,7 @@ document.addEventListener('keydown', e => {
 });
 window.addEventListener('resize', placePop);
 document.addEventListener('input', e => {
-  if (e.target.id === 'vozText' && S.sheet) S.sheet.text = e.target.value;
+  if (e.target.id === 'vozText' && S.sheet) { S.sheet.text = e.target.value; const a = document.getElementById('vozOut'); if (a) a.href = vozOutUrl(); }
   if (e.target.id === 'newName') {
     const h = document.getElementById('dupHint'); if (!h) return;
     const nm = e.target.value.trim(), m = nm.length > 1 ? V.match(nm, F().productos) : { exact: null, options: [] };
@@ -729,7 +753,7 @@ document.addEventListener('pointermove', e => {
     drag.started = true;
     const r = drag.el.getBoundingClientRect();
     drag.dx = drag.x0 - r.left; drag.dy = drag.y0 - r.top;
-    drag.ghost = drag.el.cloneNode(true); drag.ghost.classList.add('ghost');
+    drag.ghost = drag.el.cloneNode(true); drag.ghost.classList.add('drag-ghost');
     document.body.appendChild(drag.ghost); drag.el.classList.add('dragging');
   }
   e.preventDefault();
