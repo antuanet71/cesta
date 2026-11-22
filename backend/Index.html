@@ -172,7 +172,11 @@ function sing(w) {
 }
 const STOP = new Set(['de', 'del', 'el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas', 'al', 'para', 'con', 'en', 'y', 'e']);
 // «ñoquis» y «gnoquis» se escriben distinto pero suenan igual
-function words(s) { return strip(s).replace(/[^a-z0-9ñ ]+/g, ' ').replace(/gn/g, 'n').split(/\s+/).filter(Boolean).map(sing); }
+// y «zero»/«cero», «vino»/«bino»: se comparan por cómo suenan
+const fon = w => w.replace(/z/g, 'c').replace(/v/g, 'b').replace(/h/g, '').replace(/ll/g, 'y');
+function words(s) { return strip(s).replace(/[^a-z0-9ñ ]+/g, ' ').replace(/gn/g, 'n').split(/\s+/).filter(Boolean).map(sing).map(fon); }
+// «limpia cristales» = «Limpiacristales»
+const compact = s => key(s).replace(/ /g, '');
 function key(s) { return words(s).filter(w => !STOP.has(w)).join(' '); }
 
 /* ---------- trocear ---------- */
@@ -214,9 +218,25 @@ function splitRun(part, productos) {
   return out.length ? out : [part];
 }
 // «ajos mercadona», «arroz froiz»: el nombre de un súper o tienda sin «en» delante
+const OIDOS = {
+  froic: ['freud', 'floyd', 'froid', 'froyd', 'floid', 'frois', 'froix', 'fruic', 'flois', 'froit', 'freuid', 'fróis'],
+  lidl: ['lidel', 'lidle', 'lidol', 'little', 'lil', 'lid', 'lidi'],
+  aldi: ['aldy', 'aldis', 'baldi'],
+  alimerka: ['alimerca', 'ali merca', 'alimerkas'],
+  gadi: ['gadis', 'gadys', 'cadis', 'gaddis', 'gades'],
+  mercadona: ['mercadonas', 'merca dona'],
+  eroski: ['eroski', 'erosqui', 'eroschi'],
+  carrefour: ['carrefur', 'carfur', 'carrefour', 'carre four']
+};
 function markShops(part, tiendas) {
   if (!tiendas || !tiendas.length) return part;
-  const ts = tiendas.map(x => ({ n: x.nombre || x, k: key(x.nombre || x) })).filter(x => x.k);
+  const ts = [];
+  tiendas.forEach(x => {
+    const n = x.nombre || x, k = key(n); if (!k) return;
+    ts.push({ n: n, k: k });
+    // cómo suele oír el reconocimiento de voz algunos súpers
+    Object.keys(OIDOS).forEach(b => { if (k.split(' ').includes(b) || k.replace(/ /g, '') === b) OIDOS[b].forEach(a => ts.push({ n: n, k: key(a) })); });
+  });
   const ws = part.split(' ').filter(Boolean), out = [];
   for (let i = 0; i < ws.length; i++) {
     let hit = null, len = 0;
@@ -225,6 +245,8 @@ function markShops(part, tiendas) {
       const k = key(ws.slice(i, i + n).join(' '));
       if (!k || STOP.has(k)) continue;
       hit = ts.find(t => t.k === k) || (k.length >= 4 ? ts.find(t => t.k.split(' ')[0] === k || t.k.startsWith(k + ' ')) : null);
+      // tras «en», se admite una palabra parecida («en Froid»)
+      if (!hit && n === 1 && k.length >= 4 && /^(en|del)$/.test(out.length ? strip(out[out.length - 1]) : '')) hit = ts.find(t => lev(t.k.split(' ')[0], k) <= 2);
       if (hit) len = n;
     }
     if (!hit) { out.push(ws[i]); continue; }
@@ -286,7 +308,8 @@ function match(name, productos) {
   const k = key(name); if (!k) return { exact: null, options: [] };
   const kw = k.split(' ');
   const act = productos.filter(p => p.activo !== false);
-  const exact = act.filter(p => key(p.nombre) === k);
+  const kc = k.replace(/ /g, '');
+  const exact = act.filter(p => key(p.nombre) === k || compact(p.nombre) === kc);
   if (exact.length) return { exact: exact[0], options: [] };
   const fuzzy = act.filter(p => { const pw = key(p.nombre).split(' '); return pw.length === kw.length && pw.every((w, i) => wEq(w, kw[i])); });
   if (fuzzy.length === 1) return { exact: fuzzy[0], options: [] };
@@ -456,7 +479,7 @@ const isEmoji = l => !!l && !BRANDS[l] && /[^\x00-\x7F]/.test(l);
 const V = window.CestaVoz;
 /* Dentro de Google el micrófono está bloqueado: se dicta en esta página y vuelve a la app con el texto */
 const VOZ_URL = 'https://antuanet71.github.io/cesta/voz.html';
-const VOZ_V = 6; // sube al cambiar voz.html, para que el móvil no use la copia vieja
+const VOZ_V = 7; // sube al cambiar voz.html, para que el móvil no use la copia vieja
 const cap = t => { t = String(t || '').trim(); return t ? t[0].toUpperCase() + t.slice(1) : t; };
 const PALETTE = ['#3B6FD8', '#D9467A', '#E08A1E', '#2E9E6A', '#7A5BD6', '#0E9AA7', '#C8372D', '#8A6B4E', '#6B7A75', '#D4A20B', '#1E8E57', '#0050AA'];
 
@@ -500,6 +523,8 @@ function applyOp(st, op, email) {
     case 'setProductSuper': { const p = st.productos.find(x => x.id === op.productoId); if (p) p.superId = op.superId; break; }
     case 'setProductPersona': { const p = st.productos.find(x => x.id === op.productoId); if (p) p.personaId = op.personaId || ''; break; }
     case 'moveProduct': { const p = st.productos.find(x => x.id === op.productoId); if (p) p.categoriaId = op.categoriaId; break; }
+    case 'renameProduct': { const p = st.productos.find(x => x.id === op.productoId); if (p && op.nombre) p.nombre = op.nombre; break; }
+    case 'renameCategory': { const c = st.categorias.find(x => x.id === op.id); if (c && op.nombre) c.nombre = op.nombre; break; }
     case 'addCategory': if (!st.categorias.some(c => c.id === op.id)) st.categorias.push({ id: op.id, nombre: op.nombre, color: op.color, orden: st.categorias.length + 1 }); break;
     case 'moveCategory': {
       const cs = st.categorias.slice().sort((a, b) => (Number(a.orden) || 0) - (Number(b.orden) || 0));
@@ -711,7 +736,7 @@ function vList() {
       }).join('') + `</div></div>`;
   });
   h += '</div>';
-  h += any ? '<p class="hint">Toca lo que metes en el carro. Sale tachado y vuelve al catálogo.</p>' : '<div class="empty">La lista está vacía.<br>Toca productos en el catálogo.</div>';
+  h += any ? '<p class="hint">Toca lo que metes en el carro: sale tachado y vuelve al catálogo. Mantén pulsado para cambiarlo de súper, de persona o de cantidad.</p>' : '<div class="empty">La lista está vacía.<br>Toca productos en el catálogo.</div>';
   return h;
 }
 function vSettings() {
@@ -787,7 +812,8 @@ function vOverlay() {
   return h;
 }
 
-function render(keep) {
+function render(keep) { keepInputs(() => renderNow(keep)); }
+function renderNow(keep) {
   const app = document.getElementById('app');
   const sc = app.querySelector('.screen'); const y = sc ? sc.scrollTop : 0;
   if (S.noauth) { app.innerHTML = vNoAuth(); }
@@ -799,8 +825,17 @@ function render(keep) {
   }
   renderOverlay();
 }
+// Al repintar (sincronización cada pocos segundos) no se pierde lo que se está escribiendo
+function keepInputs(fn) {
+  const a = document.activeElement, vals = {};
+  document.querySelectorAll('input[id], textarea[id]').forEach(i => { vals[i.id] = i.value; });
+  const focus = a && a.id && vals[a.id] !== undefined ? { id: a.id, s: a.selectionStart, e: a.selectionEnd } : null;
+  fn();
+  Object.keys(vals).forEach(id => { const i = document.getElementById(id); if (i && i.value !== vals[id]) i.value = vals[id]; });
+  if (focus) { const i = document.getElementById(focus.id); if (i) { i.focus(); try { i.setSelectionRange(focus.s, focus.e); } catch (_) {} } }
+}
 function renderOverlay() {
-  document.getElementById('overlay').innerHTML = S.fam || S.toast ? vOverlay() : '';
+  keepInputs(() => { document.getElementById('overlay').innerHTML = S.fam || S.toast ? vOverlay() : ''; });
   placePop();
   if (S.adding) focusSoon('new-' + S.adding);
   if (S.sheet && S.sheet.type === 'newProduct') focusSoon('newName');
@@ -811,7 +846,7 @@ function renderOverlay() {
 function focusSoon(id) { setTimeout(() => { const i = document.getElementById(id); if (i && document.activeElement !== i) i.focus(); }, 40); }
 function placePop() {
   const pop = document.getElementById('pop'); if (!pop || !S.pop) return;
-  const b = S.pop.type === 'item' ? document.querySelector(`.b[data-pid="${S.pop.id}"]`) : document.querySelector(`.b[data-set="${S.pop.k}"][data-id="${S.pop.id}"]`);
+  const b = S.pop.type === 'item' ? (document.querySelector(`.b[data-pid="${S.pop.id}"]`) || document.querySelector(`.b[data-buy="${S.pop.id}"]`)) : document.querySelector(`.b[data-set="${S.pop.k}"][data-id="${S.pop.id}"]`);
   if (!b) return;
   const br = b.getBoundingClientRect(), W = window.innerWidth, H = window.innerHeight;
   const x = Math.max(8, Math.min(br.left + br.width / 2 - pop.offsetWidth / 2, W - pop.offsetWidth - 8));
@@ -972,8 +1007,9 @@ function clasificar() {
 function vClas() {
   const ms = S.sheet.moves, n = ms.filter(m => m.on).length;
   return `<div class="scrim" data-act="closeSheet"><div class="sheet" data-stop="1"><h3>Cambiaría de categoría</h3>
-    <p class="hint" style="text-align:left;margin:0 0 10px">Quita con ✕ lo que no quieras mover, o toca otra categoría.</p>
-    <div class="vrows">${ms.map((m, i) => { const p = prodOf(m.pid); return `<div class="vr${m.on ? '' : ' skip'}"><div class="vh"><b>${esc(p.nombre)}</b><span class="st">${esc(catName(p))} → ${esc((catOf(m.to) || {}).nombre)}</span><button class="x" data-act="clasToggle" data-v="${i}">${m.on ? '✕' : '↺'}</button></div>${m.on ? `<div class="chips">${cats().filter(c => c.id !== p.categoriaId).map(c => `<button class="ch${m.to === c.id ? ' on' : ''}" style="--c:${c.color}" data-act="clasCat" data-i="${i}" data-v="${c.id}">${esc(c.nombre)}</button>`).join('')}</div>` : ''}</div>`; }).join('')}</div>
+    <p class="hint" style="text-align:left;margin:0 0 10px">Quita con ✕ lo que no quieras mover, o toca otra categoría. Toca ✎ para cambiar un nombre.</p>
+    <div class="chips" style="margin:0 0 12px">${cats().map(c => `<button class="ch" style="--c:${c.color}" data-act="clasRename" data-k="categorias" data-id="${c.id}">✎ ${esc(c.nombre)}</button>`).join('')}</div>
+    <div class="vrows">${ms.map((m, i) => { const p = prodOf(m.pid); return `<div class="vr${m.on ? '' : ' skip'}"><div class="vh"><b><button class="x" style="color:inherit;font-size:inherit;padding:0" data-act="clasRename" data-k="productos" data-id="${p.id}">${esc(p.nombre)} ✎</button></b><span class="st">${esc(catName(p))} → ${esc((catOf(m.to) || {}).nombre)}</span><button class="x" data-act="clasToggle" data-v="${i}">${m.on ? '✕' : '↺'}</button></div>${m.on ? `<div class="chips">${cats().filter(c => c.id !== p.categoriaId).map(c => `<button class="ch${m.to === c.id ? ' on' : ''}" style="--c:${c.color}" data-act="clasCat" data-i="${i}" data-v="${c.id}">${esc(c.nombre)}</button>`).join('')}</div>` : ''}</div>`; }).join('')}</div>
     <div class="row"><button class="btn ghost" data-act="closeSheet">Cancelar</button><span style="flex:1"></span><button class="btn pri" data-act="clasOk">Mover ${n}</button></div></div></div>`;
 }
 
@@ -997,11 +1033,14 @@ const app = document.getElementById('app');
 let lp = null, lpFired = false, tapT = null, tapId = null;
 document.addEventListener('pointerdown', e => {
   lpFired = false;
-  const b = e.target.closest('.b[data-pid]'); if (!b || S.editCat) return;
+  // En el catálogo y también en la Lista (para cambiar de súper, persona o cantidad)
+  const b = e.target.closest('.b[data-pid], .b[data-buy]'); if (!b || S.editCat) return;
+  const bid = b.dataset.pid || b.dataset.buy;
+  if (b.dataset.buy && !inList(bid)) return;
   b.classList.add('press');
   lp = setTimeout(() => {
     lpFired = true; b.classList.remove('press');
-    const p = F().productos.find(x => x.id === b.dataset.pid); if (!p) return;
+    const p = F().productos.find(x => x.id === bid); if (!p) return;
     clearTimeout(tapT); tapT = null;
     openItemPop(p);
     try { navigator.vibrate && navigator.vibrate(15); } catch (_) {}
@@ -1033,6 +1072,7 @@ document.addEventListener('click', e => {
   }
   const bb = e.target.closest('.b[data-buy]');
   if (bb) {
+    if (lpFired) { lpFired = false; return; }
     const r = rowOf(bb.dataset.buy); if (!r) return;
     const p = f.productos.find(x => x.id === r.productoId);
     const v = !r.comprado;
@@ -1063,7 +1103,7 @@ document.addEventListener('click', e => {
     case 'size': LS.set('k', Number(v)); applySize(Number(v)); render(true); break;
     case 'retry': S.noauth = ''; S.err = ''; render(); refresh(); break;
     case 'view': S.editCat = false; S.view = v; S.pop = null; S.adding = null; render(); break;
-    case 'closeSheet': if (el.classList.contains('scrim') && e.target !== el) return; stopRec(); S.sheet = null; renderOverlay(); break;
+    case 'closeSheet': if (el.classList.contains('scrim') && e.target !== el) return; stopRec(); S.sheet = (S.sheet && S.sheet.back) || null; renderOverlay(); break;
     case 'closePop': S.pop = null; render(true); break;
     case 'setP': { const r = inList(S.pop.id), nv = r && r.personaId === v ? '' : v; itemOp({ personaId: nv }); doOp({ op: 'setProductPersona', productoId: S.pop.id, personaId: nv }); break; }
     case 'setS': itemOp({ superId: v }); doOp({ op: 'setProductSuper', productoId: S.pop.id, superId: v }); break;
@@ -1089,10 +1129,14 @@ document.addEventListener('click', e => {
     }
     case 'pickColor': { const x = f[S.pop.k].find(y => y.id === S.pop.id); doOp(Object.assign({ op: S.pop.k === 'personas' ? 'upsertPersona' : 'upsertSuper' }, x, { color: v })); break; }
     case 'rename': { const x = f[S.pop.k].find(y => y.id === S.pop.id); S.sheet = { type: 'rename', k: S.pop.k, id: x.id, nombre: x.nombre }; S.pop = null; render(true); break; }
+    case 'clasRename': { const k = el.dataset.k, x = f[k].find(y => y.id === el.dataset.id); if (!x) return; S.sheet = { type: 'rename', k, id: x.id, nombre: x.nombre, back: S.sheet }; renderOverlay(); break; }
     case 'saveRename': {
       const nm = document.getElementById('renameIn').value.trim(); if (!nm) return;
-      const x = f[S.sheet.k].find(y => y.id === S.sheet.id);
-      doOp(Object.assign({ op: S.sheet.k === 'personas' ? 'upsertPersona' : 'upsertSuper' }, x, { nombre: nm })); S.sheet = null; renderOverlay(); break;
+      const k = S.sheet.k, x = f[k].find(y => y.id === S.sheet.id);
+      if (k === 'productos') doOp({ op: 'renameProduct', productoId: x.id, nombre: cap(nm) });
+      else if (k === 'categorias') doOp({ op: 'renameCategory', id: x.id, nombre: cap(nm) });
+      else doOp(Object.assign({ op: k === 'personas' ? 'upsertPersona' : 'upsertSuper' }, x, { nombre: nm }));
+      S.sheet = S.sheet.back || null; render(true); break;
     }
     case 'del': {
       if (S.pop.k === 'supers' && supers().length < 2) { toast('Tiene que quedar al menos un súper'); return; }

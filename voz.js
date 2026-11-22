@@ -16,7 +16,11 @@ function sing(w) {
 }
 const STOP = new Set(['de', 'del', 'el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas', 'al', 'para', 'con', 'en', 'y', 'e']);
 // «ñoquis» y «gnoquis» se escriben distinto pero suenan igual
-function words(s) { return strip(s).replace(/[^a-z0-9ñ ]+/g, ' ').replace(/gn/g, 'n').split(/\s+/).filter(Boolean).map(sing); }
+// y «zero»/«cero», «vino»/«bino»: se comparan por cómo suenan
+const fon = w => w.replace(/z/g, 'c').replace(/v/g, 'b').replace(/h/g, '').replace(/ll/g, 'y');
+function words(s) { return strip(s).replace(/[^a-z0-9ñ ]+/g, ' ').replace(/gn/g, 'n').split(/\s+/).filter(Boolean).map(sing).map(fon); }
+// «limpia cristales» = «Limpiacristales»
+const compact = s => key(s).replace(/ /g, '');
 function key(s) { return words(s).filter(w => !STOP.has(w)).join(' '); }
 
 /* ---------- trocear ---------- */
@@ -58,9 +62,25 @@ function splitRun(part, productos) {
   return out.length ? out : [part];
 }
 // «ajos mercadona», «arroz froiz»: el nombre de un súper o tienda sin «en» delante
+const OIDOS = {
+  froic: ['freud', 'floyd', 'froid', 'froyd', 'floid', 'frois', 'froix', 'fruic', 'flois', 'froit', 'freuid', 'fróis'],
+  lidl: ['lidel', 'lidle', 'lidol', 'little', 'lil', 'lid', 'lidi'],
+  aldi: ['aldy', 'aldis', 'baldi'],
+  alimerka: ['alimerca', 'ali merca', 'alimerkas'],
+  gadi: ['gadis', 'gadys', 'cadis', 'gaddis', 'gades'],
+  mercadona: ['mercadonas', 'merca dona'],
+  eroski: ['eroski', 'erosqui', 'eroschi'],
+  carrefour: ['carrefur', 'carfur', 'carrefour', 'carre four']
+};
 function markShops(part, tiendas) {
   if (!tiendas || !tiendas.length) return part;
-  const ts = tiendas.map(x => ({ n: x.nombre || x, k: key(x.nombre || x) })).filter(x => x.k);
+  const ts = [];
+  tiendas.forEach(x => {
+    const n = x.nombre || x, k = key(n); if (!k) return;
+    ts.push({ n: n, k: k });
+    // cómo suele oír el reconocimiento de voz algunos súpers
+    Object.keys(OIDOS).forEach(b => { if (k.split(' ').includes(b) || k.replace(/ /g, '') === b) OIDOS[b].forEach(a => ts.push({ n: n, k: key(a) })); });
+  });
   const ws = part.split(' ').filter(Boolean), out = [];
   for (let i = 0; i < ws.length; i++) {
     let hit = null, len = 0;
@@ -69,6 +89,8 @@ function markShops(part, tiendas) {
       const k = key(ws.slice(i, i + n).join(' '));
       if (!k || STOP.has(k)) continue;
       hit = ts.find(t => t.k === k) || (k.length >= 4 ? ts.find(t => t.k.split(' ')[0] === k || t.k.startsWith(k + ' ')) : null);
+      // tras «en», se admite una palabra parecida («en Froid»)
+      if (!hit && n === 1 && k.length >= 4 && /^(en|del)$/.test(out.length ? strip(out[out.length - 1]) : '')) hit = ts.find(t => lev(t.k.split(' ')[0], k) <= 2);
       if (hit) len = n;
     }
     if (!hit) { out.push(ws[i]); continue; }
@@ -130,7 +152,8 @@ function match(name, productos) {
   const k = key(name); if (!k) return { exact: null, options: [] };
   const kw = k.split(' ');
   const act = productos.filter(p => p.activo !== false);
-  const exact = act.filter(p => key(p.nombre) === k);
+  const kc = k.replace(/ /g, '');
+  const exact = act.filter(p => key(p.nombre) === k || compact(p.nombre) === kc);
   if (exact.length) return { exact: exact[0], options: [] };
   const fuzzy = act.filter(p => { const pw = key(p.nombre).split(' '); return pw.length === kw.length && pw.every((w, i) => wEq(w, kw[i])); });
   if (fuzzy.length === 1) return { exact: fuzzy[0], options: [] };

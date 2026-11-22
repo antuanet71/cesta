@@ -278,6 +278,8 @@ function applyOps(user, ops) {
         case 'addProduct':
           if (!st.productos.some(p => p.id === op.id)) st.productos.push({ id: op.id, nombre: op.nombre, categoriaId: op.categoriaId, superId: op.superId, orden: st.productos.length + 1, activo: true });
           dirty.Productos = true; break;
+        case 'renameProduct': { const p = st.productos.find(x => x.id === op.productoId); if (p && op.nombre) { p.nombre = String(op.nombre); dirty.Productos = true; } break; }
+        case 'renameCategory': { const c = st.categorias.find(x => x.id === op.id); if (c && op.nombre) { c.nombre = String(op.nombre); dirty.Categorias = true; } break; }
         case 'setProductPersona': { const p = st.productos.find(x => x.id === op.productoId); if (p) { p.personaId = op.personaId || ''; dirty.Productos = true; } break; }
         case 'setProductSuper': { const p = st.productos.find(x => x.id === op.productoId); if (p) { p.superId = op.superId; dirty.Productos = true; } break; }
         case 'moveProduct': { const p = st.productos.find(x => x.id === op.productoId); if (p) { p.categoriaId = op.categoriaId; dirty.Productos = true; } break; }
