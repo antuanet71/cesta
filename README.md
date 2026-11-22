@@ -39,11 +39,17 @@ Quien no esté en Config ve un aviso y no puede entrar.
 
 Un toque añade, cada toque más suma uno, y con doble toque (o manteniendo pulsado) eliges persona, súper y cantidad. En la Lista, al tocar se tacha y vuelve al catálogo. Lo tachado desaparece de la lista al día siguiente y queda guardado en Historial.
 
+- **🎤 Dictar** (arriba en el catálogo): dices o escribes «dos leches, pan, plátanos para Lucía y lejía en Lidl» y la app lo apunta. Lo que no está en el catálogo lo añade en la categoría que le parece; si duda, te pregunta antes de apuntar.
+- En **Organizar** también puedes añadir productos («Nuevo»), dictar productos nuevos y tocar **Clasificar** para que proponga cambios de categoría (útil al crear una categoría nueva, por ejemplo Carnicería).
+- Si añades algo que ya existe, te dice en qué categoría está y lo resalta.
+- Tiendas que no son supermercados (Frutería 🍎, Pescadería 🐟, Carnicería 🥩, Panadería 🥖, Farmacia 💊, Droguería 🧴): Ajustes › Supermercados y tiendas › + Nuevo. Para quitar un súper o tienda, tócalo › ✕ Quitar.
+- Si el botón «Hablar» no funciona dentro de Google, usa el micrófono del teclado del móvil en el cuadro de texto.
+
 ## Editar a mano en la hoja
 
 - En **Productos** basta con escribir el nombre, la categoría y el súper **por su nombre** (por ejemplo `Champú`, `Higiene`, `Mercadona`). La app completa el resto al abrirse.
 - Para quitar o mover productos y añadir categorías: en la app, Ajustes › Catálogo › «Organizar» (arrastra los ladrillos entre categorías, ✕ para quitar). En la hoja, poner `FALSE` en `activo`.
-- Los logos disponibles para la columna `logo` de Supers: `mercadona`, `lidl`, `aldi`, `alimerka`, `froiz`, `gadis`, `elcorte`.
+- Los logos disponibles para la columna `logo` de Supers: `mercadona`, `lidl`, `aldi`, `alimerka`, `froiz`, `gadis`, `elcorte`, o un emoji (por ejemplo 🍎).
 
 ## Actualizar a una versión nueva
 
@@ -51,7 +57,7 @@ Pega los nuevos `Code.gs` e `Index.html` y luego **Implementar › Gestionar imp
 
 ## Para quien programe
 
-`app.js` y `style.css` son la app. `python3 build.py` genera `backend/Index.html` con todo dentro. Abriendo `index.html` fuera de Google (por ejemplo en GitHub Pages) la app funciona en modo prueba, guardando solo en el móvil.
+`app.js`, `voz.js` (entender lo dictado y adivinar categorías) y `style.css` son la app. `python3 build.py` genera `backend/Index.html` con todo dentro. Abriendo `index.html` fuera de Google (por ejemplo en GitHub Pages) la app funciona en modo prueba, guardando solo en el móvil.
 
 ## Pensado para más adelante
 

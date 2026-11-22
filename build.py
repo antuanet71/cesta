@@ -22,6 +22,9 @@ html = f"""<!DOCTYPE html>
 <div id="overlay"></div>
 <script>window.CESTA_LOGOS = {json.dumps(logos)};</script>
 <script>
+{rd('voz.js')}
+</script>
+<script>
 {rd('app.js')}
 </script>
 </body>

@@ -89,10 +89,33 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
 .pn{min-width:calc(22px*var(--k));text-align:center;font-weight:800}
 .pmsg{font-size:calc(12.5px*var(--k));font-weight:700;flex:1;min-width:120px}
 
-/* bottom sheet */
-.scrim{position:fixed;inset:0;background:rgba(10,20,17,.4);z-index:20;display:flex;align-items:flex-end;justify-content:center}
-.sheet{background:var(--surface);width:100%;max-width:640px;border-radius:20px 20px 0 0;padding:14px 14px calc(18px + env(safe-area-inset-bottom,0px));animation:up .18s ease}
+/* ventanas flotantes arriba (el teclado del móvil ocupa la parte de abajo) */
+.scrim{position:fixed;inset:0;background:rgba(10,20,17,.4);z-index:20;display:flex;align-items:flex-start;justify-content:center;padding:calc(8px + env(safe-area-inset-top,0px)) 8px 0}
+.sheet{background:var(--surface);width:100%;max-width:640px;border-radius:16px;padding:14px;max-height:calc(100dvh - 24px);overflow-y:auto;box-shadow:0 12px 32px rgba(0,0,0,.25);animation:down .18s ease}
+@keyframes down{from{transform:translateY(-24px);opacity:.5}to{transform:none;opacity:1}}
 @keyframes up{from{transform:translateY(30px);opacity:.5}to{transform:none;opacity:1}}
+.sheet textarea.in{width:100%;min-height:calc(84px*var(--k));resize:vertical;display:block;-webkit-user-select:text;user-select:text}
+.sheet .hint{margin:8px 0 0}
+.dup{margin:8px 2px 0;font-size:calc(13px*var(--k));font-weight:700;color:var(--danger)}
+.vrows{display:flex;flex-direction:column;gap:8px;margin:0 0 12px}
+.vr{border:1.5px solid var(--line);border-radius:10px;padding:7px 8px;display:flex;flex-direction:column;gap:6px}
+.vr.ask{border-color:#E0A100;background:color-mix(in srgb,#E0A100 9%,transparent)}
+.vr.skip{opacity:.45}
+.vr.skip .vh b{text-decoration:line-through}
+.vh{display:flex;align-items:center;gap:6px;font-size:calc(14px*var(--k))}
+.vh b{flex:1;min-width:0}
+.vh .st{font-size:calc(11.5px*var(--k));font-weight:700;color:var(--muted);text-align:right}
+.vh .x{border:0;background:none;color:var(--muted);font-weight:800;font-size:calc(14px*var(--k));padding:2px 4px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.ch{border:1.5px solid var(--c,var(--line));color:var(--c,var(--ink));background:var(--surface);border-radius:999px;padding:calc(3px*var(--k)) calc(9px*var(--k));font-size:calc(12px*var(--k));font-weight:700}
+.ch.on{background:var(--c,var(--accent));color:#fff}
+.mic{border:0;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:calc(4px*var(--k)) calc(10px*var(--k));font-weight:800;font-size:calc(12.5px*var(--k));margin-left:8px}
+.mic.live{background:var(--danger);color:#fff;animation:blink 1s infinite}
+.tools{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.emo{font-size:calc(14px*var(--k));line-height:1;flex:none}
+.ps .emo{font-size:calc(18px*var(--k))}
+.b.flash{animation:flash .5s ease 4;box-shadow:0 0 0 3px var(--accent)}
+@keyframes flash{50%{transform:scale(1.12)}}
 .sheet h3{margin:0 0 12px;font-size:calc(18px*var(--k))}
 .row{display:flex;gap:8px;align-items:center}
 .in{flex:1;min-width:0;border:1.5px solid var(--line);border-radius:10px;padding:10px 11px;background:var(--bg);color:var(--ink);font:inherit;font-size:calc(16px*var(--k))}
@@ -102,7 +125,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
 .btn.wide{width:100%}
 .fam-opt{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;border:2px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 12px;margin-bottom:6px;font-weight:700;text-align:left}
 .fam-opt.on{border-color:var(--accent)}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(74px + env(safe-area-inset-bottom,0px));z-index:30;width:calc(100% - 24px);max-width:600px;background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 12px;font-size:calc(13.5px*var(--k));font-weight:700;display:flex;justify-content:space-between;gap:10px;animation:up .2s ease}
+.toast{position:fixed;left:0;right:0;margin:0 auto;bottom:calc(74px + env(safe-area-inset-bottom,0px));z-index:30;width:calc(100% - 24px);max-width:600px;background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 12px;font-size:calc(13.5px*var(--k));font-weight:700;display:flex;justify-content:space-between;gap:10px;animation:up .2s ease}
 .toast button{background:none;border:0;color:inherit;font-weight:800;text-decoration:underline;padding:0}
 
 /* login / onboarding */
