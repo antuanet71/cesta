@@ -42,6 +42,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
   padding:calc(6px*var(--k)) calc(7px*var(--k));font-size:calc(13px*var(--k));font-weight:600;line-height:1.1;touch-action:manipulation;max-width:100%;text-decoration:none;color:var(--ink)}
 .b .pl{font-weight:800;color:var(--muted);font-size:calc(13px*var(--k));line-height:1}
 .b.on{background:var(--s);border-color:var(--s);color:var(--t,#fff)}
+:root[data-colors="soft"] .b.on{background:color-mix(in srgb,var(--s) 26%,var(--brick));border-color:color-mix(in srgb,var(--s) 65%,var(--brick));color:var(--ink)}
 .b.on .pl{color:inherit;opacity:.85}
 .b .q{font-size:calc(11px*var(--k));font-weight:800;background:rgba(255,255,255,.3);border-radius:4px;padding:0 4px}
 .b .pd{width:calc(10px*var(--k));height:calc(10px*var(--k));border-radius:50%;background:var(--p);box-shadow:0 0 0 1.5px #fff;flex:none}

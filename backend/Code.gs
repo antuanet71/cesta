@@ -14,7 +14,7 @@
 const TABS = {
   Config: ['correo', 'nombre'],
   Categorias: ['id', 'nombre', 'color', 'orden'],
-  Productos: ['id', 'nombre', 'categoria', 'super', 'orden', 'activo'],
+  Productos: ['id', 'nombre', 'categoria', 'super', 'orden', 'activo', 'persona'],
   Personas: ['id', 'nombre', 'color', 'orden', 'activo'],
   Supers: ['id', 'nombre', 'color', 'logo', 'orden', 'activo'],
   Lista: ['productoId', 'cantidad', 'personaId', 'superId', 'comprado', 'actualizado', 'por'],
@@ -172,6 +172,8 @@ function migrateProductHeaders(ss) {
     const i = h.indexOf(a);
     if (i >= 0) { sh.getRange(1, i + 1).setValue(b); changed = true; }
   });
+  // Columna nueva: persona habitual de cada producto
+  if (h.indexOf('persona') < 0) { sh.getRange(1, Math.max(h.filter(String).length, 1) + 1).setValue('persona'); changed = true; }
   if (changed) productDropdowns(ss);
   return changed;
 }
@@ -182,11 +184,11 @@ function productDropdowns(ss) {
     const rule = SpreadsheetApp.newDataValidation().requireValueInRange(tab(ss, srcTab).getRange('B2:B'), true).setAllowInvalid(true).build();
     sh.getRange(2, i + 1, 999, 1).setDataValidation(rule);
   };
-  set('categoria', 'Categorias'); set('super', 'Supers');
+  set('categoria', 'Categorias'); set('super', 'Supers'); set('persona', 'Personas');
 }
 function productsToSheet(st) {
   const nm = (arr, id) => (arr.find(x => x.id === id) || {}).nombre || '';
-  return st.productos.map(p => Object.assign({}, p, { categoria: nm(st.categorias, p.categoriaId), super: nm(st.supers, p.superId) }));
+  return st.productos.map(p => Object.assign({}, p, { categoria: nm(st.categorias, p.categoriaId), super: nm(st.supers, p.superId), persona: nm(st.personas, p.personaId) }));
 }
 function readState(ss, user) {
   const migrated = migrateProductHeaders(ss);
@@ -200,7 +202,8 @@ function readState(ss, user) {
   st.productos.forEach(p => {
     if (p.categoria !== undefined) p.categoriaId = p.categoria;
     if (p.super !== undefined) p.superId = p.super;
-    delete p.categoria; delete p.super;
+    p.personaId = p.persona || '';
+    delete p.categoria; delete p.super; delete p.persona;
   });
   const fixIds = (arr, p, k) => arr.forEach((x, i) => { if (!x.id) { x.id = rid(p); dirty[k] = true; } if (x.orden === '' || x.orden === undefined) x.orden = i + 1; });
   fixIds(st.categorias, 'c', 'Categorias'); fixIds(st.productos, 'p', 'Productos'); fixIds(st.personas, 'pe', 'Personas'); fixIds(st.supers, 's', 'Supers');
@@ -214,6 +217,7 @@ function readState(ss, user) {
     const s = byName(st.supers, p.superId) || (st.supers[0] || {}).id;
     if (nameOf(st.supers, s) !== p.superId) dirty.Productos = true;
     p.superId = s;
+    if (p.personaId) { const pe = byName(st.personas, p.personaId); if (nameOf(st.personas, pe) !== p.personaId) dirty.Productos = true; p.personaId = pe; }
     p.activo = bool(p.activo);
   });
   st.personas.forEach(p => { p.activo = bool(p.activo); if (!p.color) { p.color = '#3B6FD8'; dirty.Personas = true; } });
@@ -274,6 +278,7 @@ function applyOps(user, ops) {
         case 'addProduct':
           if (!st.productos.some(p => p.id === op.id)) st.productos.push({ id: op.id, nombre: op.nombre, categoriaId: op.categoriaId, superId: op.superId, orden: st.productos.length + 1, activo: true });
           dirty.Productos = true; break;
+        case 'setProductPersona': { const p = st.productos.find(x => x.id === op.productoId); if (p) { p.personaId = op.personaId || ''; dirty.Productos = true; } break; }
         case 'setProductSuper': { const p = st.productos.find(x => x.id === op.productoId); if (p) { p.superId = op.superId; dirty.Productos = true; } break; }
         case 'moveProduct': { const p = st.productos.find(x => x.id === op.productoId); if (p) { p.categoriaId = op.categoriaId; dirty.Productos = true; } break; }
         case 'addCategory':
@@ -297,7 +302,8 @@ function applyOps(user, ops) {
         case 'removePersona': {
           const p = st.personas.find(x => x.id === op.id); if (p) p.activo = false;
           st.lista.forEach(x => { if (x.personaId === op.id) x.personaId = ''; });
-          dirty.Personas = dirty.Lista = true; break;
+          st.productos.forEach(x => { if (x.personaId === op.id) x.personaId = ''; });
+          dirty.Personas = dirty.Lista = dirty.Productos = true; break;
         }
         case 'upsertSuper': {
           const s = st.supers.find(x => x.id === op.id);

@@ -88,6 +88,7 @@ function applyOp(st, op, email) {
     case 'buy': { const r = row(op.productoId); if (r) Object.assign(r, { comprado: op.value ? now : '', actualizado: now, por: email }); break; }
     case 'addProduct': st.productos.push({ id: op.id, nombre: op.nombre, categoriaId: op.categoriaId, superId: op.superId, orden: st.productos.length + 1, activo: true }); break;
     case 'setProductSuper': { const p = st.productos.find(x => x.id === op.productoId); if (p) p.superId = op.superId; break; }
+    case 'setProductPersona': { const p = st.productos.find(x => x.id === op.productoId); if (p) p.personaId = op.personaId || ''; break; }
     case 'moveProduct': { const p = st.productos.find(x => x.id === op.productoId); if (p) p.categoriaId = op.categoriaId; break; }
     case 'addCategory': if (!st.categorias.some(c => c.id === op.id)) st.categorias.push({ id: op.id, nombre: op.nombre, color: op.color, orden: st.categorias.length + 1 }); break;
     case 'moveCategory': {
@@ -108,6 +109,7 @@ function applyOp(st, op, email) {
     case 'removePersona': {
       const p = st.personas.find(x => x.id === op.id); if (p) p.activo = false;
       st.lista.forEach(r => { if (r.personaId === op.id) r.personaId = ''; });
+      st.productos.forEach(p => { if (p.personaId === op.id) p.personaId = ''; });
       break;
     }
     case 'upsertSuper': {
@@ -148,6 +150,8 @@ function applySize(k) { document.documentElement.style.setProperty('--k', k); }
 applySize(LS.get('k', 1.25));
 function applyTheme(t) { if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); else document.documentElement.removeAttribute('data-theme'); }
 applyTheme(LS.get('theme', 'auto'));
+function applySoft(v) { if (v) document.documentElement.setAttribute('data-colors', 'soft'); else document.documentElement.removeAttribute('data-colors'); }
+applySoft(LS.get('soft', false));
 
 /* ---------- estado ---------- */
 const FAM = 'fam';
@@ -318,7 +322,7 @@ function vSettings() {
     <div class="frame" style="--c:#7A5BD6"><span class="frame-t">Personas</span><div class="bricks">${ps}${adder('personas', 'Nombre')}</div></div>
     <div class="frame" style="--c:#1E8E57"><span class="frame-t">Supermercados y tiendas</span><div class="bricks">${ss}${brandBricks}${adder('supers', 'Otro súper')}</div></div>
     <div class="frame" style="--c:#C94848"><span class="frame-t">Catálogo</span><div class="bricks"><button class="b" data-act="editCat">Organizar: mover, quitar y añadir categorías</button></div></div>
-    <div class="frame" style="--c:#3D6FC2"><span class="frame-t">Aspecto</span><div class="bricks">${[['auto', 'Automático'], ['light', 'Claro'], ['dark', 'Oscuro']].map(([t, l]) => `<button class="b${LS.get('theme', 'auto') === t ? ' on' : ''}" style="--s:#3D6FC2" data-act="theme" data-v="${t}">${l}</button>`).join('')}</div></div>
+    <div class="frame" style="--c:#3D6FC2"><span class="frame-t">Aspecto</span><div class="bricks">${[['auto', 'Automático'], ['light', 'Claro'], ['dark', 'Oscuro']].map(([t, l]) => `<button class="b${LS.get('theme', 'auto') === t ? ' on' : ''}" style="--s:#3D6FC2" data-act="theme" data-v="${t}">${l}</button>`).join('')}</div><div class="bricks" style="margin-top:6px">${[[false, 'Colores sólidos'], [true, 'Colores suaves']].map(([v, l]) => `<button class="b${!!LS.get('soft', false) === v ? ' on' : ''}" style="--s:#3D6FC2" data-act="soft" data-v="${v ? 1 : ''}">${l}</button>`).join('')}</div></div>
     <div class="frame" style="--c:#C48A1C"><span class="frame-t">Tamaño</span><div class="bricks">${SIZES.map((k, i) => `<button class="b${Number(LS.get('k', 1.25)) === k ? ' on' : ''}" style="--s:#C48A1C;font-size:${Math.round(13 * k)}px;padding:${Math.round(6 * k)}px ${Math.round(10 * k)}px" data-act="size" data-v="${k}">${['A', 'A', 'A', 'A'][i]}</button>`).join('')}</div></div>
     <div class="frame" style="--c:var(--accent)"><span class="frame-t">Familia</span><div class="bricks">
       ${f.hojaUrl ? `<a class="b" href="${esc(f.hojaUrl)}" target="_blank" rel="noopener">Abrir la hoja de cálculo</a>` : '<span class="b">En modo prueba no hay hoja</span>'}
@@ -465,7 +469,9 @@ function vVoz() {
       <div class="row" style="margin-top:10px">${GAS ? (F().appUrl ? `<a class="mic" id="vozOut" target="_top" style="margin:0;padding:10px 14px;text-decoration:none" href="${esc(vozOutUrl())}">🎤 Hablar</a>` : '') : SR ? `<button class="mic${sh.listening ? ' live' : ''}" style="margin:0;padding:10px 14px" data-act="vozMic">${sh.listening ? '● Escuchando…' : '🎤 Hablar'}</button>` : ''}<span style="flex:1"></span><button class="btn ghost" data-act="closeSheet">Cancelar</button><button class="btn pri" data-act="vozGo">Seguir</button></div>
       <p class="hint" style="text-align:left">Separa con comas o con «y». Si el botón Hablar no funciona, usa el micrófono del teclado.${lista ? ' Puedes decir cantidades, «para» alguien y «en» un súper.' : ''}</p></div></div>`;
   }
+  // Solo se enseñan las dudas; al resolver una (o quitarla con ✕) desaparece
   const rows = sh.items.map((o, i) => {
+    if (!vozNeeds(o)) return '';
     const p = o.pid ? prodOf(o.pid) : null;
     let st = '', body = '';
     const extra = [o.qty > 1 ? '×' + o.qty : '', o.personaId ? (personaById(o.personaId) || {}).nombre : '', o.superId ? (superById(o.superId) || {}).nombre : ''].filter(Boolean).join(' · ');
@@ -480,12 +486,14 @@ function vVoz() {
       body = `<div class="chips">${cats().map(c => `<button class="ch${o.cat === c.id ? ' on' : ''}" style="--c:${c.color}" data-act="vozCat" data-i="${i}" data-v="${c.id}">${esc(c.nombre)}</button>`).join('')}${o.options.length && lista ? `<button class="ch" style="--c:var(--muted)" data-act="vozPick" data-i="${i}" data-v="${o.options[0]}">Usar ${esc(prodOf(o.options[0]).nombre)}</button>` : ''}</div>`;
     }
     const nm = p ? p.nombre : o.name;
-    return `<div class="vr${vozNeeds(o) ? ' ask' : ''}${o.skip ? ' skip' : ''}"><div class="vh"><b>${esc(nm)}</b><span class="st">${st}</span><button class="x" data-act="vozSkip" data-v="${i}" aria-label="${o.skip ? 'Volver a incluir' : 'Quitar'}">${o.skip ? '↺' : '✕'}</button></div>${o.skip ? '' : body}</div>`;
+    return `<div class="vr ask"><div class="vh"><b>${esc(nm)}</b><span class="st">${st}</span><button class="x" data-act="vozSkip" data-v="${i}" aria-label="No apuntar">✕</button></div>${body}</div>`;
   }).join('');
-  const n = sh.items.filter(o => !o.skip).length, ask = sh.items.filter(vozNeeds).length;
-  return `<div class="scrim" data-act="closeSheet"><div class="sheet" data-stop="1"><h3>${lista ? 'Esto apunto' : 'Esto añado al catálogo'}</h3>
-    <div class="vrows">${rows}</div>
-    ${ask ? `<p class="dup" style="margin:0 0 10px">${ask === 1 ? 'Tengo una duda: elige arriba.' : `Tengo ${ask} dudas: elige arriba.`}</p>` : ''}
+  const ok = sh.items.filter(o => !o.skip && !vozNeeds(o));
+  const n = ok.length, ask = sh.items.filter(vozNeeds).length;
+  const sum = ok.map(o => { const p = o.pid ? prodOf(o.pid) : null; return esc(p ? p.nombre : o.name) + (o.qty > 1 ? ' ×' + o.qty : '') + (!p ? ` <span style="color:var(--muted)">(nuevo, ${esc((catOf(o.cat) || {}).nombre || '')})</span>` : ''); }).join(' · ');
+  return `<div class="scrim" data-act="closeSheet"><div class="sheet" data-stop="1"><h3>${ask ? (ask === 1 ? 'Tengo una duda' : `Tengo ${ask} dudas`) : (lista ? 'Listo para apuntar' : 'Listo para añadir')}</h3>
+    ${ask ? `<div class="vrows">${rows}</div>` : ''}
+    ${n ? `<p style="margin:0 0 12px;font-size:calc(13px*var(--k))"><b>${lista ? 'Apunto' : 'Añado'}:</b> ${sum}</p>` : ''}
     <div class="row"><button class="btn ghost" data-act="vozBack">Volver</button><span style="flex:1"></span><button class="btn pri" data-act="vozOk"${n ? '' : ' disabled'}>${lista ? 'Apuntar' : 'Añadir'} ${n}</button></div></div></div>`;
 }
 function vozApply() {
@@ -506,6 +514,7 @@ function vozApply() {
     const s = o.superId || (r ? r.superId : (superById(p.superId) || {}).id || '');
     doOp({ op: 'setItem', productoId: pid, cantidad: r ? Math.max(Number(r.cantidad) || 1, o.qty) : o.qty, personaId: o.personaId || (r ? r.personaId : ''), superId: s });
     if (o.superId && o.superId !== p.superId) doOp({ op: 'setProductSuper', productoId: pid, superId: o.superId });
+    if (o.personaId && o.personaId !== p.personaId) doOp({ op: 'setProductPersona', productoId: pid, personaId: o.personaId });
     added++;
   });
   S.sheet = null; renderOverlay();
@@ -552,7 +561,8 @@ function addOne(p) {
   if (r) doOp({ op: 'setItem', productoId: p.id, cantidad: Number(r.cantidad) + 1, personaId: r.personaId, superId: r.superId });
   else {
     const s = superById(p.superId);
-    doOp({ op: 'setItem', productoId: p.id, cantidad: 1, personaId: '', superId: s ? s.id : '' });
+    const pe = personaById(p.personaId);
+    doOp({ op: 'setItem', productoId: p.id, cantidad: 1, personaId: pe ? pe.id : '', superId: s ? s.id : '' });
   }
 }
 function openItemPop(p) { if (!inList(p.id)) addOne(p); S.pop = { type: 'item', id: p.id }; render(true); }
@@ -616,6 +626,7 @@ document.addEventListener('click', e => {
   const a = el.dataset.act, v = el.dataset.v;
   switch (a) {
     case 'theme': LS.set('theme', v); applyTheme(v); render(true); break;
+    case 'soft': LS.set('soft', !!v); applySoft(!!v); render(true); break;
     case 'catMove': doOp({ op: 'moveCategory', id: el.dataset.id, dir: Number(v) }); break;
     case 'newCategory': S.sheet = { type: 'newCategory' }; renderOverlay(); break;
     case 'saveCategory': {
@@ -632,7 +643,7 @@ document.addEventListener('click', e => {
     case 'view': S.editCat = false; S.view = v; S.pop = null; S.adding = null; render(); break;
     case 'closeSheet': if (el.classList.contains('scrim') && e.target !== el) return; stopRec(); S.sheet = null; renderOverlay(); break;
     case 'closePop': S.pop = null; render(true); break;
-    case 'setP': { const r = inList(S.pop.id); itemOp({ personaId: r && r.personaId === v ? '' : v }); break; }
+    case 'setP': { const r = inList(S.pop.id), nv = r && r.personaId === v ? '' : v; itemOp({ personaId: nv }); doOp({ op: 'setProductPersona', productoId: S.pop.id, personaId: nv }); break; }
     case 'setS': itemOp({ superId: v }); doOp({ op: 'setProductSuper', productoId: S.pop.id, superId: v }); break;
     case 'inc': { const r = inList(S.pop.id); itemOp({ cantidad: Number(r.cantidad) + 1 }); break; }
     case 'dec': { const r = inList(S.pop.id); if (Number(r.cantidad) > 1) itemOp({ cantidad: Number(r.cantidad) - 1 }); break; }

@@ -79,7 +79,7 @@ function match(name, productos) {
     .sort((a, b) => key(b.nombre).length - key(a.nombre).length);
   // "jamón" → Jamón York, Jamón serrano… (lo dicho está contenido en el catálogo)
   const wider = act.filter(p => { const pw = key(p.nombre).split(' '); return kw.every(w => pw.some(x => wEq(x, w))); });
-  if (inside.length === 1 && !wider.filter(p => p !== inside[0]).length) return { exact: inside[0], options: [] };
+  // «mozzarella pizza» con «Mozzarella» en el catálogo: puede ser una variante, así que se pregunta
   const opts = []; [...fuzzy, ...wider, ...inside].forEach(p => { if (!opts.includes(p)) opts.push(p); });
   if (opts.length === 1 && wider.length === 1 && wider[0] === opts[0] && !inside.length) return { exact: null, options: opts };
   return { exact: null, options: opts.slice(0, 6) };
