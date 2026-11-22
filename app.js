@@ -43,11 +43,12 @@ const SHOPS = {
   farmacia: { n: 'Farmacia', e: '💊', c: '#2E9E6A' },
   drogueria: { n: 'Droguería', e: '🧴', c: '#7A5BD6' }
 };
+const EMOJIS = ['🛒', '🏪', '🍎', '🥦', '🐟', '🥩', '🥖', '🧀', '🥚', '🍷', '💊', '🧴', '🐶', '🌿'];
 const isEmoji = l => !!l && !BRANDS[l] && /[^\x00-\x7F]/.test(l);
 const V = window.CestaVoz;
 /* Dentro de Google el micrófono está bloqueado: se dicta en esta página y vuelve a la app con el texto */
 const VOZ_URL = 'https://antuanet71.github.io/cesta/voz.html';
-const VOZ_V = 7; // sube al cambiar voz.html, para que el móvil no use la copia vieja
+const VOZ_V = 8; // sube al cambiar voz.html, para que el móvil no use la copia vieja
 const cap = t => { t = String(t || '').trim(); return t ? t[0].toUpperCase() + t.slice(1) : t; };
 const PALETTE = ['#3B6FD8', '#D9467A', '#E08A1E', '#2E9E6A', '#7A5BD6', '#0E9AA7', '#C8372D', '#8A6B4E', '#6B7A75', '#D4A20B', '#1E8E57', '#0050AA'];
 
@@ -99,6 +100,11 @@ function applyOp(st, op, email) {
       const i = cs.findIndex(c => c.id === op.id), j = i + op.dir;
       if (i >= 0 && j >= 0 && j < cs.length) { const t = cs[i]; cs[i] = cs[j]; cs[j] = t; }
       cs.forEach((c, k) => { c.orden = k + 1; });
+      break;
+    }
+    case 'swapSupers': {
+      const x = st.supers.find(y => y.id === op.a), y = st.supers.find(z => z.id === op.b);
+      if (x && y) { const t = x.orden; x.orden = y.orden; y.orden = t; if (x.orden === y.orden) x.orden = Number(x.orden) + (op.dir || 1); }
       break;
     }
     case 'restoreProduct': { const p = st.productos.find(x => x.id === op.productoId); if (p) p.activo = true; break; }
@@ -291,13 +297,15 @@ function vCatalog() {
 function vList() {
   const f = F(); const t0 = startOfToday();
   const rows = f.lista.filter(r => (!r.comprado || Number(r.comprado) >= t0) && f.productos.some(p => p.id === r.productoId && p.activo !== false));
-  let h = `<div class="top"><span class="fam-name">Lista de la compra</span><span class="count">${syncDot()}${listCount()} por comprar</span></div><div class="frames">`;
+  let h = `<div class="top"><span class="fam-name">Lista de la compra</span><span class="count">${syncDot()}${listCount()} por comprar${listCount() ? '<button class="mic" data-act="buyAll">✓ Todo comprado</button>' : ''}</span></div><div class="frames">`;
   let any = false;
+  const shown = supers().filter(s => rows.some(r => (superById(r.superId) || {}).id === s.id));
   supers().forEach(s => {
     const mine = rows.filter(r => (superById(r.superId) || {}).id === s.id)
       .sort((a, b) => (a.comprado ? 1 : 0) - (b.comprado ? 1 : 0));
     if (!mine.length) return; any = true;
-    h += `<div class="frame" style="--c:${s.color}"><span class="frame-t">${logoImg(s, '')}${esc(s.nombre)}</span><div class="bricks">` +
+    const k = shown.indexOf(s), pend = mine.filter(r => !r.comprado).length;
+    h += `<div class="frame" style="--c:${s.color}"><span class="frame-t">${logoImg(s, '')}${esc(s.nombre)}${k > 0 ? `<button class="mv" data-act="superMove" data-id="${s.id}" data-o="${shown[k - 1] && shown[k - 1].id}" aria-label="Subir">▲</button>` : ''}${k < shown.length - 1 ? `<button class="mv" data-act="superMove" data-id="${s.id}" data-o="${shown[k + 1] && shown[k + 1].id}" aria-label="Bajar">▼</button>` : ''}${pend ? `<button class="mv" data-act="buyAll" data-id="${s.id}">✓ Comprado${pend > 1 ? ' (' + pend + ')' : ''}</button>` : ''}</span><div class="bricks">` +
       mine.map(r => {
         const p = f.productos.find(x => x.id === r.productoId), pe = personaById(r.personaId);
         return `<button class="b ${r.comprado ? 'done' : 'on'}" style="--s:${s.color};--t:${ink(s.color)}${pe ? ';--p:' + pe.color : ''}" data-buy="${r.productoId}">${pe ? '<span class="pd"></span>' : ''}${esc(p.nombre)}${Number(r.cantidad) > 1 ? `<span class="q">${r.cantidad}</span>` : ''}</button>`;
@@ -344,7 +352,7 @@ function vOverlay() {
     const r = inList(S.pop.id);
     if (r) h += `<div class="veil" data-act="closePop"></div><div class="pop" id="pop">
       <div class="pop-row">${personas().map(p => `<button class="pp ${r.personaId === p.id ? 'on' : ''}" style="--c:${p.color}" data-act="setP" data-v="${p.id}" title="${esc(p.nombre)}">${esc(initial(p.nombre))}</button>`).join('')}</div>
-      <div class="pop-row">${supers().map(s => `<button class="ps ${(superById(r.superId) || {}).id === s.id ? 'on' : ''}" style="--c:${s.color}" data-act="setS" data-v="${s.id}" title="${esc(s.nombre)}">${logoUrl(s.logo) ? `<img src="${logoUrl(s.logo)}" alt="${esc(s.nombre)}">` : isEmoji(s.logo) ? `<span class="emo">${esc(s.logo)}</span>` : esc(initial(s.nombre))}</button>`).join('')}</div>
+      <div class="pop-row">${supers().map(s => `<button class="ps ${(superById(r.superId) || {}).id === s.id ? 'on' : ''}" style="--c:${s.color}" data-act="setS" data-v="${s.id}" title="${esc(s.nombre)}">${logoUrl(s.logo) ? `<img src="${logoUrl(s.logo)}" alt="${esc(s.nombre)}">` : isEmoji(s.logo) ? `<span class="emo">${esc(s.logo)}</span>` : esc(initial(s.nombre))}</button>`).join('')}<button class="ps" style="--c:var(--muted);opacity:1;font-size:calc(18px*var(--k))" data-act="newSuper" title="Añadir súper o tienda">+</button></div>
       <div class="pop-row"><button class="pq" data-act="dec">−</button><span class="pn">${r.cantidad}</span><button class="pq" data-act="inc">+</button><button class="pq del" data-act="removeItem" title="Quitar de la lista">✕</button></div>
     </div>`;
   } else if (S.pop && S.pop.type === 'set' && f) {
@@ -355,6 +363,7 @@ function vOverlay() {
       const other = isP ? null : supers().find(s => s.id !== x.id);
       h += `<div class="veil" data-act="closePop"></div><div class="pop" id="pop">
         <div class="pop-row">${PALETTE.map(c => `<button class="pp ${c === x.color ? 'on' : ''}" style="--c:${c};width:calc(26px*var(--k));height:calc(26px*var(--k))" data-act="pickColor" data-v="${c}" aria-label="Color"></button>`).join('')}</div>
+        ${!isP && !BRANDS[x.logo] ? `<div class="pop-row">${EMOJIS.map(em => `<button class="pq${x.logo === em ? ' on' : ''}" style="padding:0 4px;font-size:calc(18px*var(--k))${x.logo === em ? ';border-color:var(--accent)' : ''}" data-act="pickEmoji" data-v="${em}">${em}</button>`).join('')}<button class="pq" style="font-size:12px" data-act="pickEmoji" data-v="">Sin</button></div>` : ''}
         <div class="pop-row">${S.pop.confirm
           ? `<span class="pmsg">¿Quitar ${esc(x.nombre)}?${uses ? `<br><span class="count">${uses} en la lista ${isP ? 'se quedan sin persona' : 'pasan a ' + esc(other ? other.nombre : '')}</span>` : ''}</span><button class="pq" data-act="closePop" style="font-size:13px">No</button><button class="pq red" data-act="delOk">Quitar</button>`
           : `<button class="pq" data-act="rename" style="font-size:13px">Renombrar</button><button class="pq del" data-act="del" style="margin-left:0">✕ Quitar</button>`}</div>
@@ -368,6 +377,13 @@ function vOverlay() {
   } else if (S.sheet && S.sheet.type === 'newCategory') {
     h += `<div class="scrim" data-act="closeSheet"><div class="sheet" data-stop="1"><h3>Nueva categoría</h3>
       <div class="row"><input class="in" id="newCatName" placeholder="Por ejemplo, Congelados" enterkeyhint="done"><button class="btn pri" data-act="saveCategory">Añadir</button></div></div></div>`;
+  } else if (S.sheet && S.sheet.type === 'newSuper') {
+    const used = supers().map(x => V.key(x.nombre));
+    const opts = Object.keys(BRANDS).filter(k => !used.includes(V.key(BRANDS[k].n))).map(k => `<button class="b" data-act="nsPick" data-v="${k}"><img class="lg" src="${logoUrl(k)}" alt="">${BRANDS[k].n}</button>`)
+      .concat(Object.keys(SHOPS).filter(k => !used.includes(V.key(SHOPS[k].n))).map(k => `<button class="b" data-act="nsPick" data-v="${k}"><span class="emo">${SHOPS[k].e}</span>${SHOPS[k].n}</button>`)).join('');
+    h += `<div class="scrim" data-act="closeSheet"><div class="sheet" data-stop="1"><h3>Nuevo súper o tienda</h3>
+      <div class="bricks" style="margin-bottom:12px">${opts}</div>
+      <div class="row"><input class="in" id="nsName" placeholder="Otro: nombre" enterkeyhint="done" autocomplete="off"><button class="btn pri" data-act="nsSave">Añadir</button></div></div></div>`;
   } else if (S.sheet && S.sheet.type === 'voz') {
     h += vVoz();
   } else if (S.sheet && S.sheet.type === 'clas') {
@@ -508,7 +524,7 @@ function vVoz() {
     } else {
       st = o.cat ? (o.guess ? 'Nuevo · lo pondría en' : 'Nuevo en') : '¿En qué categoría lo pongo?';
       if (o.options.length) st = `Parecido a ${esc(o.options.map(id => prodOf(id).nombre).join(', '))}. ` + st;
-      body = `<div class="chips">${cats().map(c => `<button class="ch${o.cat === c.id ? ' on' : ''}" style="--c:${c.color}" data-act="vozCat" data-i="${i}" data-v="${c.id}">${esc(c.nombre)}</button>`).join('')}${o.options.length && lista ? `<button class="ch" style="--c:var(--muted)" data-act="vozPick" data-i="${i}" data-v="${o.options[0]}">Usar ${esc(prodOf(o.options[0]).nombre)}</button>` : ''}</div>`;
+      body = `<div class="chips">${o.name.trim().split(/\s+/).length > 1 ? `<button class="ch on" style="--c:var(--accent)" data-act="vozSplit" data-i="${i}">Separar en ${o.name.trim().split(/\s+/).filter(w => !/^(de|del|la|el|y|con)$/i.test(w)).length}</button>` : ''}${cats().map(c => `<button class="ch${o.cat === c.id ? ' on' : ''}" style="--c:${c.color}" data-act="vozCat" data-i="${i}" data-v="${c.id}">${esc(c.nombre)}</button>`).join('')}${o.options.length && lista ? `<button class="ch" style="--c:var(--muted)" data-act="vozPick" data-i="${i}" data-v="${o.options[0]}">Usar ${esc(prodOf(o.options[0]).nombre)}</button>` : ''}</div>`;
     }
     const nm = p ? p.nombre : o.name;
     return `<div class="vr ask"><div class="vh"><b>${esc(nm)}</b><span class="st">${st}</span><button class="x" data-act="vozSkip" data-v="${i}" aria-label="No apuntar">✕</button></div>${body}</div>`;
@@ -565,9 +581,11 @@ function startRec() {
 }
 function clasificar() {
   const f = F(), moves = [];
+  const no = LS.get('clasNo', {});
   act(f.productos).forEach(p => {
     const c = V.classify(p.nombre, cats(), []);
-    if (c.cat && c.cat.id !== p.categoriaId) moves.push({ pid: p.id, to: c.cat.id, on: true });
+    // lo que ya rechazaste o dejaste donde estaba no se vuelve a proponer
+    if (c.cat && c.cat.id !== p.categoriaId && !no[p.id + '>' + c.cat.id] && !no[p.id + '@' + p.categoriaId]) moves.push({ pid: p.id, to: c.cat.id, on: true });
   });
   if (!moves.length) { toast('Todo parece estar en su sitio'); return; }
   S.sheet = { type: 'clas', moves }; S.pop = null; renderOverlay();
@@ -633,7 +651,8 @@ document.addEventListener('click', e => {
     if (lpFired) { lpFired = false; return; }
     const p = f.productos.find(x => x.id === pb.dataset.pid); if (!p) return;
     if (S.editCat) return;
-    if (tapT && tapId === p.id) { clearTimeout(tapT); tapT = null; openItemPop(p); return; }
+    // Doble toque: si ya estaba marcado, lo desmarca; si no, abre persona/súper/cantidad
+    if (tapT && tapId === p.id) { clearTimeout(tapT); tapT = null; if (inList(p.id)) { doOp({ op: 'removeItem', productoId: p.id }); toast(`${p.nombre} desmarcado`); } else openItemPop(p); return; }
     clearTimeout(tapT); tapId = p.id;
     tapT = setTimeout(() => { tapT = null; addOne(p); }, 260);
     return;
@@ -753,6 +772,16 @@ document.addEventListener('click', e => {
     case 'vozBack': S.sheet.step = 'input'; renderOverlay(); break;
     case 'vozSkip': { const o = S.sheet.items[Number(v)]; o.skip = !o.skip; renderOverlay(); break; }
     case 'vozPick': { const o = S.sheet.items[Number(el.dataset.i)]; o.pid = v; o.isNew = false; renderOverlay(); break; }
+    case 'vozSplit': {
+      const k = Number(el.dataset.i), o = S.sheet.items[k], f2 = F();
+      const parts = o.name.trim().split(/\s+/).filter(w => !/^(de|del|la|el|y|con)$/i.test(w));
+      S.sheet.items.splice(k, 1, ...parts.map(w => {
+        const m = V.match(w, f2.productos), c = V.classify(w, cats(), f2.productos);
+        return Object.assign({}, o, { name: cap(w), qty: 1, pid: m.exact ? m.exact.id : '', known: !!m.exact, options: [], isNew: !m.exact, cat: c.cat ? c.cat.id : '', guess: !!c.cat });
+      }));
+      if (!S.sheet.items.some(vozNeeds)) { vozApply(); break; }
+      renderOverlay(); break;
+    }
     case 'vozAll': {
       const k = Number(el.dataset.i), o = S.sheet.items[k];
       S.sheet.items.splice(k, 1, ...o.options.map(id => Object.assign({}, o, { pid: id, options: [], isNew: false, known: true, name: prodOf(id).nombre })));
@@ -762,6 +791,29 @@ document.addEventListener('click', e => {
     case 'vozCat': { const o = S.sheet.items[Number(el.dataset.i)]; o.cat = v; o.guess = false; renderOverlay(); break; }
     case 'vozOk': vozApply(); break;
     case 'clasificar': clasificar(); break;
+    case 'superMove': doOp({ op: 'swapSupers', a: el.dataset.id, b: el.dataset.o }); break;
+    case 'buyAll': {
+      const sid = el.dataset.id;
+      const rs = f.lista.filter(r => !r.comprado && f.productos.some(p => p.id === r.productoId && p.activo !== false) && (!sid || (superById(r.superId) || {}).id === sid));
+      if (!rs.length) return;
+      rs.forEach(r => doOp({ op: 'buy', productoId: r.productoId, value: true }));
+      toast(`${rs.length} comprado${rs.length === 1 ? '' : 's'}`, () => rs.forEach(r => doOp({ op: 'buy', productoId: r.productoId, value: false })));
+      break;
+    }
+    case 'pickEmoji': { const x = f.supers.find(y => y.id === S.pop.id); if (x) doOp(Object.assign({ op: 'upsertSuper' }, x, { logo: v || '' })); break; }
+    case 'newSuper': S.sheet = { type: 'newSuper', item: S.pop && S.pop.id }; S.pop = null; render(true); break;
+    case 'nsPick': case 'nsSave': {
+      let spec;
+      if (a === 'nsSave') { const nm = (document.getElementById('nsName') || {}).value; if (!nm || !nm.trim()) return; spec = { nombre: cap(nm.trim()) }; }
+      else spec = BRANDS[v] ? { nombre: BRANDS[v].n, color: BRANDS[v].c, logo: v } : { nombre: SHOPS[v].n, color: SHOPS[v].c, logo: SHOPS[v].e };
+      const old = f.supers.find(x => V.key(x.nombre) === V.key(spec.nombre));
+      const used = supers().map(x => x.color);
+      const id = old ? old.id : uid('s');
+      doOp({ op: 'upsertSuper', id, nombre: spec.nombre, color: spec.color || (old && old.color) || PALETTE.find(c => !used.includes(c)) || PALETTE[0], logo: spec.logo || (old && old.logo) || '' });
+      const it = S.sheet.item; S.sheet = null;
+      if (it && inList(it)) { const r = inList(it); doOp({ op: 'setItem', productoId: it, cantidad: Number(r.cantidad), personaId: r.personaId, superId: id }); doOp({ op: 'setProductSuper', productoId: it, superId: id }); S.pop = { type: 'item', id: it }; }
+      render(true); toast(`${spec.nombre} añadido`); break;
+    }
     case 'clearMarks': {
       // Desmarca lo apuntado (todo o una categoría). Se puede deshacer.
       const cid = el.dataset.id;
@@ -772,7 +824,13 @@ document.addEventListener('click', e => {
       toast(`${rows.length} desmarcado${rows.length === 1 ? '' : 's'}${c ? ' en ' + c.nombre : ''}`, () => rows.forEach(r => doOp({ op: 'setItem', productoId: r.productoId, cantidad: r.cantidad, personaId: r.personaId, superId: r.superId })));
       break;
     }
-    case 'clasToggle': { const m = S.sheet.moves[Number(v)]; m.on = !m.on; renderOverlay(); break; }
+    case 'clasToggle': {
+      const m = S.sheet.moves[Number(v)], no = LS.get('clasNo', {}), p = prodOf(m.pid);
+      no[m.pid + '>' + m.to] = 1; if (p) no[m.pid + '@' + p.categoriaId] = 1; LS.set('clasNo', no);
+      S.sheet.moves.splice(Number(v), 1);
+      if (!S.sheet.moves.length) { S.sheet = null; toast('No queda nada por cambiar'); }
+      renderOverlay(); break;
+    }
     case 'clasCat': { const m = S.sheet.moves[Number(el.dataset.i)]; m.to = v; m.on = true; renderOverlay(); break; }
     case 'clasOk': {
       const ms = S.sheet.moves.filter(m => m.on && m.to);
@@ -785,7 +843,7 @@ document.addEventListener('click', e => {
 document.addEventListener('keydown', e => {
   if (e.key !== 'Enter' || !e.target.id) return;
   const id = e.target.id;
-  const map = { newName: 'saveProduct', renameIn: 'saveRename', newCatName: 'saveCategory' };
+  const map = { newName: 'saveProduct', renameIn: 'saveRename', newCatName: 'saveCategory', nsName: 'nsSave' };
   if (id === 'vozText') return;
   const act = map[id] || (id.startsWith('new-') ? 'addOk' : null);
   if (act) { const b = document.querySelector(`[data-act="${act}"]`); b && b.click(); }

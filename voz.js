@@ -170,7 +170,9 @@ function match(name, productos) {
 
 /* ---------- adivinar la categoría ---------- */
 const DICT = {
-  fruta: 'fruta verdura hortaliza manzana pera platano banana naranja mandarina clementina limon lima pomelo kiwi uva fresa freson cereza melon sandia piña mango aguacate melocoton nectarina paraguayo albaricoque ciruela higo granada frambuesa arandano mora caqui chirimoya papaya coco patata cebolla cebolleta ajo tomate lechuga pepino pimiento calabacin berenjena zanahoria puerro apio brocoli coliflor col repollo lombarda espinaca acelga judia verde champiñon seta rucula canonigo escarola endivia calabaza boniato batata remolacha perejil cilantro albahaca hierbabuena menta alcachofa esparrago rabano nabo jengibre guisante haba ensalada',
+  fruta: 'fruta manzana pera platano banana naranja mandarina clementina limon lima pomelo kiwi uva fresa freson cereza melon sandia piña mango aguacate melocoton nectarina paraguayo albaricoque ciruela higo granada frambuesa arandano mora caqui chirimoya papaya coco',
+  verdura: 'verdura hortaliza patata cebolla cebolleta ajo tomate lechuga pepino pimiento calabacin berenjena zanahoria puerro apio brocoli coliflor col repollo lombarda espinaca acelga judia verde champiñon seta rucula canonigo escarola endivia calabaza boniato batata remolacha perejil cilantro albahaca hierbabuena menta alcachofa esparrago rabano nabo jengibre guisante haba ensalada',
+  farmacia: 'farmacia paracetamol ibuprofeno aspirina gelocatil frenadol preservativo condon tirita gasa venda esparadrapo termometro betadine alcohol agua oxigenada suero fisiologico jarabe pastilla vitamina antiacido almax omeprazol antihistaminico colirio lagrima artificial mascarilla quirurgica test de embarazo crema de pañal',
   frescos: 'leche yogur yogurt natilla flan gelatina cuajada queso mantequilla margarina nata huevo jamon york serrano pavo chorizo salchichon fuet lomo embutido mortadela bacon beicon panceta salchicha carne ternera cerdo pollo pechuga muslo contramuslo alita filete hamburguesa costilla solomillo higado chuleta conejo cordero cabrito picada carrillera secreto presa pescado merluza pescadilla salmon bacalao dorada lubina sardina boqueron trucha rape lenguado gallo emperador atun fresco gamba langostino mejillon calamar sepia pulpo almeja berberecho kefir requeson tofu hummus gazpacho masa pizza fresca quesito petit actimel danone',
   despensa: 'arroz pasta macarron espagueti spaghetti espiral fideo tallarin lasaña canelon lenteja garbanzo alubia judion legumbre harina azucar sal aceite tomate frito salsa mayonesa ketchup mostaza lata conserva atun bonito sardinilla mejillon en escabeche sopa caldo pure cafe te infusion manzanilla poleo cacao nesquik colacao cola cao cereal muesli avena galleta magdalena bizcocho pan tostado pan de molde pan bimbo biscote mermelada miel chocolate cacahuete crema de cacao nocilla nutella turron polvoron especia pimienta oregano comino pimenton canela levadura fruto seco almendra nuez avellana pipa patata frita snack palomita aceituna pepinillo maiz tortilla wrap tortita gelatina en polvo bolleria donut croissant envasado leche condensada leche evaporada',
   bebidas: 'agua cerveza vino tinto blanco refresco coca cola fanta sprite aquarius nestea zumo tonica gaseosa cava sidra champan bebida isotonica batido horchata vermut ron ginebra whisky licor',
@@ -182,7 +184,9 @@ const DICT = {
   bebe: 'potito papilla leche de continuacion biberon chupete toallita de bebe'
 };
 const CAT_SYN = {
-  fruta: ['fruta', 'verdura', 'hortaliza', 'fruteria'],
+  fruta: ['fruta', 'fruteria'],
+  verdura: ['verdura', 'hortaliza', 'huerta'],
+  farmacia: ['farmacia', 'botiquin', 'medicina', 'salud', 'parafarmacia'],
   frescos: ['fresco', 'lacteo', 'nevera', 'frigorifico', 'refrigerado', 'charcuteria'],
   carne: ['carne', 'carniceria'],
   pescado: ['pescado', 'pescaderia', 'marisco'],
@@ -195,7 +199,7 @@ const CAT_SYN = {
   mascotas: ['mascota', 'animal', 'perro', 'gato'],
   bebe: ['bebe', 'infantil']
 };
-const FALLBACK = { bebidas: 'despensa', panaderia: 'despensa', congelados: 'frescos', carne: 'frescos', pescado: 'frescos', bebe: 'higiene' };
+const FALLBACK = { fruta: 'verdura', verdura: 'fruta', farmacia: 'higiene', bebidas: 'despensa', panaderia: 'despensa', congelados: 'frescos', carne: 'frescos', pescado: 'frescos', bebe: 'higiene' };
 const CARNE = new Set(words('carne ternera cerdo pollo pechuga muslo contramuslo alita filete hamburguesa costilla solomillo higado chuleta conejo cordero cabrito picada carrillera secreto presa'));
 const PESCADO = new Set(words('pescado merluza pescadilla salmon bacalao dorada lubina sardina boqueron trucha rape lenguado gallo emperador gamba langostino mejillon calamar sepia pulpo almeja berberecho'));
 let PHRASES = null;
@@ -217,7 +221,7 @@ function phrases() {
     .forEach(ph => {
       const cat = /congelad/.test(ph) ? 'congelados' : /^(papel higienico|crema hidratante|leche corporal|protector solar|crema solar|hilo dental|cepillo de dientes|pasta de dientes|espuma de afeitar)$/.test(ph) ? 'higiene'
         : /^(rollo cocina|bolsa basura|film transparente|pastilla lavavajillas|pato wc)$/.test(ph) ? 'limpieza' : /^arena gato$/.test(ph) ? 'mascotas'
-        : /^(coca cola|bebida isotonica)$/.test(ph) ? 'bebidas' : /^(pizza fresca|atun fresco)$/.test(ph) ? 'frescos' : /^(judia verde)$/.test(ph) ? 'fruta' : /^pan integral$/.test(ph) ? 'panaderia' : 'despensa';
+        : /^(coca cola|bebida isotonica)$/.test(ph) ? 'bebidas' : /^(pizza fresca|atun fresco)$/.test(ph) ? 'frescos' : /^(judia verde)$/.test(ph) ? 'verdura' : /^pan integral$/.test(ph) ? 'panaderia' : 'despensa';
       PHRASES.push({ ws: words(ph).filter(w => !STOP.has(w)), cat: cat });
     });
   PHRASES = PHRASES.filter(p => p.ws.length);
