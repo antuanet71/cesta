@@ -10,48 +10,44 @@
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
 body{background:var(--bg);color:var(--ink);font:16px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;max-width:640px;margin:0 auto;display:flex;flex-direction:column}
-.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(10px + env(safe-area-inset-top,0px)) 12px 8px;display:flex;flex-direction:column;gap:4px}
 .hd{display:flex;align-items:center;gap:10px}
-h1{font-size:19px;margin:0;flex:1}
-.mic{width:60px;height:60px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);font-size:26px;flex:none;box-shadow:0 4px 12px rgba(0,0,0,.18)}
-.mic.live{background:var(--danger);color:#fff;animation:pulse 1.2s infinite}
-@keyframes pulse{50%{transform:scale(1.08)}}
-#estado{font-size:13px;font-weight:700;color:var(--muted)}
-textarea{width:100%;height:62px;border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface);color:var(--ink);font:inherit;resize:vertical}
-.row{display:flex;gap:8px}
-.btn{flex:1;border:0;border-radius:10px;padding:11px;font:inherit;font-weight:800;text-align:center;text-decoration:none}
-.pri{background:var(--accent);color:var(--accent-ink)}
-.sec{background:var(--surface);color:var(--muted);border:1.5px solid var(--line)}
+h1{font-size:21px;margin:0;flex:1;font-weight:800}
+.mic{border:0;border-radius:999px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:800;font-size:15px;padding:8px 16px;min-width:150px;text-align:center}
+.mic.live{background:var(--danger);color:#fff;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.55}}
+#estado{font-size:13px;font-weight:700;color:var(--muted);height:18px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .err{color:var(--danger)}
 main{padding:14px 10px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
 .frame{border:2px solid var(--c);border-radius:12px;padding:12px 6px 6px;position:relative}
 .ft{position:absolute;top:-10px;left:10px;background:var(--bg);padding:0 5px;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--c)}
 .bricks{display:flex;flex-wrap:wrap;gap:8px}
-.b{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:6px;padding:5px 8px;font:inherit;font-size:14px;font-weight:600}
+.b{position:relative;display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:6px;padding:5px 8px;font:inherit;font-size:14px;font-weight:600}
 .b.on{background:var(--s);border-color:var(--s);color:#fff}
+/* lo dictado: borde amarillo y cantidad encima; no cambia el tamaño, así nada se mueve */
+.b.dic{outline:3px solid var(--hi);outline-offset:1px}
+.b.dic[data-q]::after{content:attr(data-q);position:absolute;top:-9px;right:-8px;background:var(--hi);color:#1b1b1b;font-size:11px;font-weight:800;border-radius:8px;padding:0 5px;line-height:16px}
 .q{font-size:11px;font-weight:800;background:rgba(0,0,0,.18);border-radius:8px;padding:0 5px}
 .new{border-style:dashed}
-.legend{font-size:12px;color:var(--muted);margin:0 4px}
+#nuevos:empty{display:none}
 </style>
 </head>
 <body>
 <div class="top">
-  <div class="hd"><h1 id="titulo">Dictar la lista</h1><button class="mic" id="mic" aria-label="Hablar">🎤</button></div>
-  <div id="estado">Toca el micrófono y di los productos</div>
-  <textarea id="texto" placeholder="Por ejemplo: dos leches, pan, plátanos para Lucía y lejía en Lidl"></textarea>
-  <div class="row"><a class="btn sec" id="cancelar" href="#">Cancelar</a><a class="btn pri" id="listo" href="#">Listo</a></div>
+  <div class="hd"><h1 id="titulo">Lista</h1><button class="mic" id="mic">🎤 Dictar</button></div>
+  <div id="estado"></div>
 </div>
-<main id="cat"></main>
-<script src="voz.js?v=4"></script>
+<main><div id="cat" style="display:flex;flex-direction:column;gap:14px"></div><div id="nuevos"></div></main>
+<script src="voz.js?v=6"></script>
 <script>
 (function () {
   var q = new URLSearchParams(location.search);
   var modo = q.get('modo') === 'productos' ? 'productos' : 'lista';
   var vuelta = q.get('vuelta') || '';
   if (!/^https:\/\/script\.google\.com\/[^\s]*$/.test(vuelta)) vuelta = '';   // solo se vuelve a la app de la hoja
-  var ta = document.getElementById('texto'), mic = document.getElementById('mic'), est = document.getElementById('estado'), cat = document.getElementById('cat');
-  document.getElementById('titulo').textContent = modo === 'lista' ? 'Dictar la lista' : 'Dictar productos nuevos';
-  ta.value = q.get('texto') || '';
+  var mic = document.getElementById('mic'), est = document.getElementById('estado'), cat = document.getElementById('cat'), nuevosEl = document.getElementById('nuevos');
+  document.getElementById('titulo').textContent = modo === 'lista' ? 'Lista' : 'Productos nuevos';
+  var texto = q.get('texto') || '';   // lo dictado se guarda aquí; no se enseña
 
   /* ---- catálogo que manda la app (tras #d=) ---- */
   var snap = [];
@@ -60,7 +56,7 @@ main{padding:14px 10px calc(20px + env(safe-area-inset-bottom,0px));display:flex
   try { var hs = location.hash.match(/[#&]s=([^&]*)/); if (hs) tiendas = JSON.parse(decodeURIComponent(hs[1])); } catch (e) { tiendas = []; }
   snap.forEach(function (c) { (c[2] || []).forEach(function (p) { prods.push({ nombre: p[0], activo: true, en: p[1] || '', qty: p[2] || 0 }); }); });
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-  // El catálogo se pinta una sola vez (no se mueve mientras hablas); lo dictado se revisa al volver a la app
+  // El catálogo se pinta una vez; lo dictado solo cambia bordes (no el tamaño) y lo nuevo va al final
   function pinta() {
     var html = '';
     snap.forEach(function (c) {
@@ -70,33 +66,47 @@ main{padding:14px 10px calc(20px + env(safe-area-inset-bottom,0px));display:flex
           (on && p[2] > 1 ? ' <span class="q">' + p[2] + '</span>' : '') + '</button>';
       }).join('') + '</div></div>';
     });
-    if (snap.length) html += '<p class="legend">En color, lo que ya está en la lista. Toca un producto para añadirlo al texto.</p>';
     cat.innerHTML = html;
   }
-  function cuenta() {
-    var n = window.CestaVoz ? window.CestaVoz.parse(ta.value, prods, tiendas).length : 0;
-    return n ? 'Llevo ' + n + ' producto' + (n === 1 ? '' : 's') + '. ' : '';
+  var btns = null;
+  function marca() {
+    var V = window.CestaVoz; if (!V) return 0;
+    if (!btns) { btns = {}; cat.querySelectorAll('[data-n]').forEach(function (b) { btns[b.dataset.n] = b; }); }
+    var dic = {}, nuevos = [], items = V.parse(texto, prods, tiendas);
+    items.forEach(function (it) {
+      var m = V.match(it.name, prods);
+      if (m.exact) dic[m.exact.nombre] = (dic[m.exact.nombre] || 0) + it.qty;
+      else nuevos.push(it.name.charAt(0).toUpperCase() + it.name.slice(1) + (it.qty > 1 ? ' ×' + it.qty : ''));
+    });
+    Object.keys(btns).forEach(function (n) {
+      var b = btns[n], d = dic[n];
+      b.classList.toggle('dic', !!d);
+      if (d > 1) b.setAttribute('data-q', '×' + d); else b.removeAttribute('data-q');
+    });
+    nuevosEl.innerHTML = nuevos.length ? '<div class="frame" style="--c:var(--hi)"><span class="ft">Nuevos o dudosos: te pregunto al volver</span><div class="bricks">' +
+      nuevos.map(function (n) { return '<span class="b new">' + esc(n) + '</span>'; }).join('') + '</div></div>' : '';
+    return items.length;
   }
+  function cuenta() { var n = marca(); return n ? n + ' producto' + (n === 1 ? '' : 's') + '. ' : ''; }
   cat.addEventListener('click', function (e) {
-    var b = e.target.closest('[data-n]'); if (!b) return;
-    ta.value = (ta.value.trim() ? ta.value.trim().replace(/,\s*$/, '') + ', ' : '') + b.dataset.n.toLowerCase();
-    b.disabled = true; b.style.opacity = '.5';
+    var b = e.target.closest('[data-n]'); if (!b || b.classList.contains('dic')) return;
+    texto = (texto.trim() ? texto.trim().replace(/,\s*$/, '') + ', ' : '') + b.dataset.n.toLowerCase();
+    est.textContent = cuenta() + (escuchando ? 'Escuchando… di «listo» o toca el botón rojo.' : 'Toca «Volver» para apuntarlo.');
   });
-  pinta();
+  pinta(); marca();
 
-  function volver(conTexto) {
+  function volver() {
     if (!vuelta) { est.innerHTML = '<span class="err">No sé a qué app volver. Abre la Cesta y vuelve a intentarlo.</span>'; return; }
-    location.replace(vuelta + (vuelta.indexOf('?') >= 0 ? '&' : '?') + (conTexto ? 'dictado=' + encodeURIComponent(ta.value.trim()) + '&' : '') + 'modo=' + modo);
+    location.replace(vuelta + (vuelta.indexOf('?') >= 0 ? '&' : '?') + (texto.trim() ? 'dictado=' + encodeURIComponent(texto.trim()) + '&' : '') + 'modo=' + modo);
   }
-  document.getElementById('listo').addEventListener('click', function (e) { e.preventDefault(); parar(); volver(true); });
-  document.getElementById('cancelar').addEventListener('click', function (e) { e.preventDefault(); parar(); volver(false); });
 
   /* ---- micrófono: sigue escuchando entre pausas hasta que lo pares ---- */
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition, rec = null, escuchando = false, mudos = 0;
-  function parar() { escuchando = false; if (rec) { try { rec.stop(); } catch (e) {} } mic.classList.remove('live'); }
-  if (!SR) { mic.style.display = 'none'; est.textContent = 'Este navegador no deja dictar aquí: usa el micrófono del teclado.'; return; }
+  function parar() { escuchando = false; if (rec) { try { rec.stop(); } catch (e) {} } boton(); }
+  function boton() { mic.classList.toggle('live', escuchando); mic.textContent = escuchando ? '● Escuchando' : (texto.trim() ? '✓ Volver' : '🎤 Dictar'); }
+  if (!SR) { est.textContent = 'Este navegador no deja dictar aquí. Toca productos o vuelve.'; mic.textContent = '✓ Volver'; mic.addEventListener('click', volver); return; }
   function arranca() {
-    var base = ta.value.trim().replace(/,\s*$/, ''), oido = false;
+    var base = texto.trim().replace(/,\s*$/, ''), oido = false;
     rec = new SR(); rec.lang = 'es-ES'; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
     rec.onresult = function (e) {
       var t = ''; for (var i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
@@ -106,11 +116,11 @@ main{padding:14px 10px calc(20px + env(safe-area-inset-bottom,0px));display:flex
       var last = e.results[e.results.length - 1], fin = /(?:^|[\s,.])(ya está|ya|listo|lista|terminado|termina|fin|eso es todo|nada más)[.!]?$/i;
       if (last && last.isFinal && fin.test(t)) {
         t = t.replace(fin, '').trim();
-        ta.value = (base ? base + (t ? ', ' : '') : '') + t;
-        parar(); volver(true); return;
+        texto = (base ? base + (t ? ', ' : '') : '') + t;
+        parar(); volver(); return;
       }
-      ta.value = (base ? base + ', ' : '') + t;
-      est.textContent = cuenta() + 'Escuchando… di «listo» para terminar.';
+      texto = (base ? base + ', ' : '') + t;
+      est.textContent = cuenta() + 'Escuchando… di «listo» o toca el botón rojo.';
     };
     rec.onerror = function (e) {
       if (/not-allowed|service-not-allowed/.test(e.error)) { escuchando = false; est.innerHTML = '<span class="err">Hay que dar permiso al micrófono: candado de la barra de direcciones › Permisos › Micrófono.</span>'; }
@@ -121,14 +131,17 @@ main{padding:14px 10px calc(20px + env(safe-area-inset-bottom,0px));display:flex
       if (!oido) mudos++;
       // Cada pausa cierra una frase: se separa con una coma y se vuelve a escuchar
       if (escuchando && mudos < 3) { setTimeout(function () { if (escuchando) arranca(); }, 120); return; }
-      escuchando = false; mic.classList.remove('live');
-      est.textContent = mudos >= 3 ? 'Me he parado porque no oía nada. Toca el micrófono para seguir.' : 'Toca el micrófono para seguir, o Listo.';
+      escuchando = false; boton();
+      if (mudos >= 3 && texto.trim()) { volver(); return; }   // tras un rato en silencio, vuelve con lo dictado
+      est.textContent = mudos >= 3 ? 'No te oía. Toca «Dictar» para seguir.' : 'Toca «Volver» para apuntarlo, o di más tocando otra vez.';
     };
-    try { rec.start(); } catch (e) { rec = null; escuchando = false; mic.classList.remove('live'); }
+    try { rec.start(); } catch (e) { rec = null; escuchando = false; boton(); }
   }
+  // Botón: verde «Dictar» → rojo parpadeando mientras escucha → al tocarlo, vuelve a la app con lo dictado
   function empezar() {
-    if (escuchando) { parar(); est.textContent = 'Parado. Toca el micrófono para seguir, o Listo.'; return; }
-    escuchando = true; mudos = 0; mic.classList.add('live');
+    if (escuchando) { parar(); volver(); return; }
+    if (texto.trim() && rec === null && mic.textContent.indexOf('Volver') >= 0) { volver(); return; }
+    escuchando = true; mudos = 0; boton();
     est.textContent = 'Escuchando… di los productos y, al acabar, «listo».';
     arranca();
   }

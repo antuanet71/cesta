@@ -47,7 +47,7 @@ const isEmoji = l => !!l && !BRANDS[l] && /[^\x00-\x7F]/.test(l);
 const V = window.CestaVoz;
 /* Dentro de Google el micrófono está bloqueado: se dicta en esta página y vuelve a la app con el texto */
 const VOZ_URL = 'https://antuanet71.github.io/cesta/voz.html';
-const VOZ_V = 4; // sube al cambiar voz.html, para que el móvil no use la copia vieja
+const VOZ_V = 6; // sube al cambiar voz.html, para que el móvil no use la copia vieja
 const cap = t => { t = String(t || '').trim(); return t ? t[0].toUpperCase() + t.slice(1) : t; };
 const PALETTE = ['#3B6FD8', '#D9467A', '#E08A1E', '#2E9E6A', '#7A5BD6', '#0E9AA7', '#C8372D', '#8A6B4E', '#6B7A75', '#D4A20B', '#1E8E57', '#0050AA'];
 

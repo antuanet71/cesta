@@ -15,7 +15,8 @@ function sing(w) {
   return w;
 }
 const STOP = new Set(['de', 'del', 'el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas', 'al', 'para', 'con', 'en', 'y', 'e']);
-function words(s) { return strip(s).replace(/[^a-z0-9ñ ]+/g, ' ').split(/\s+/).filter(Boolean).map(sing); }
+// «ñoquis» y «gnoquis» se escriben distinto pero suenan igual
+function words(s) { return strip(s).replace(/[^a-z0-9ñ ]+/g, ' ').replace(/gn/g, 'n').split(/\s+/).filter(Boolean).map(sing); }
 function key(s) { return words(s).filter(w => !STOP.has(w)).join(' '); }
 
 /* ---------- trocear ---------- */
@@ -26,6 +27,7 @@ const UNIT = /^(kilos?|kg|gramos?|g|litros?|l|paquetes?|botellas?|botes?|latas?|
 // Se trocea buscando nombres del catálogo y del diccionario; lo desconocido seguido va junto.
 const QW = /^(\d+|un|uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce|quince|veinte|par|docena|media)$/;
 const UW = /^(kilos?|kg|gramos?|litros?|paquetes?|botellas?|botes?|latas?|bolsas?|cajas?|bandejas?|barras?|tarros?|briks?|bricks?|packs?|garrafas?|rollos?|piezas?|unidades?|docenas?|de|par)$/;
+const VARI = /^(entera?s?|desnatad[ao]s?|semidesnatad[ao]s?|sin|light|cero|natural(es)?|grieg[ao]s?|fresc[ao]s?|rallad[ao]s?|integral(es)?|ecologic[ao]s?|bio|grandes?|pequen[ao]s?|normal(es)?|blanc[ao]s?|negr[ao]s?|tint[ao]s?|verdes?|roj[ao]s?|amarill[ao]s?|picad[ao]s?|ahumad[ao]s?|curad[ao]s?|tiern[ao]s?|cocid[ao]s?|frit[ao]s?|congelad[ao]s?|lonchas?|lonchead[ao]s?|tacos?|enter[ao]s?|mini|extra|clasic[ao]s?|original(es)?|zero|max|0)$/;
 function splitRun(part, productos) {
   const ws = part.split(' ').filter(Boolean);
   if (ws.length < 2) return [part];
@@ -44,8 +46,9 @@ function splitRun(part, productos) {
     let len = 0;
     for (let n = Math.min(5, ws.length - i); n >= 1; n--) if (known(ws.slice(i, i + n))) { len = n; break; }
     if (len) { flush(); cur = pre.concat(ws.slice(i, i + len)); pre = []; i += len - 1; flush(); lastKnown = true; continue; }
-    // «queso de cabra», «leche entera»: lo que sigue a un producto conocido es una variante suya
-    if (!unk && lastKnown && !pre.length && out.length) { cur = out.pop().split(' '); unk = true; lastKnown = false; cur.push(ws[i]); continue; }
+    // «queso de cabra», «leche entera»: solo es variante si va con «de/con/sin» o es un adjetivo típico;
+    // si no, es otro producto («toallitas desatascador»)
+    if (!unk && lastKnown && !pre.length && out.length && (/^(de|con|sin|al|a)$/.test(w) || VARI.test(w))) { cur = out.pop().split(' '); unk = true; lastKnown = false; cur.push(ws[i]); continue; }
     lastKnown = false;
     if (!unk) { flush(); cur = pre; pre = []; unk = true; }
     cur.push(ws[i]);
@@ -151,7 +154,7 @@ const DICT = {
   panaderia: 'pan barra baguette chapata hogaza pan integral pan de pueblo panecillo',
   congelados: 'helado congelado croqueta empanadilla varita merluza congelada pizza congelada verdura congelada guisante congelado hielo patata congelada',
   higiene: 'desodorante gel champu acondicionador mascarilla pasta de dientes dentifrico cepillo de dientes colutorio enjuague hilo dental jabon de manos jabon compresa tampon salvaslip protegeslip papel higienico toallita pañal crema hidratante body leche corporal colonia perfume cuchilla espuma de afeitar maquinilla algodon bastoncillo tirita pañuelo protector solar crema solar laca gomina tinte quitaesmalte',
-  limpieza: 'lejia fairy lavavajillas detergente suavizante friegasuelo limpiacristal amoniaco estropajo bayeta fregona escoba recogedor bolsa de basura bolsa basura papel de cocina rollo de cocina rollo cocina servilleta papel de aluminio papel aluminio film transparente papel de horno oxiaction kh7 sanytol pastilla lavavajillas abrillantador quitagrasa limpiahogar multiusos ambientador insecticida guante quitamancha cillit vileda pato wc mistol vinagre de limpieza',
+  limpieza: 'desatascador desengrasante lejia fairy lavavajillas detergente suavizante friegasuelo limpiacristal amoniaco estropajo bayeta fregona escoba recogedor bolsa de basura bolsa basura papel de cocina rollo de cocina rollo cocina servilleta papel de aluminio papel aluminio film transparente papel de horno oxiaction kh7 sanytol pastilla lavavajillas abrillantador quitagrasa limpiahogar multiusos ambientador insecticida guante quitamancha cillit vileda pato wc mistol vinagre de limpieza',
   mascotas: 'pienso comida de gato comida de perro arena de gato arena gato perro lata de gato snack de perro',
   bebe: 'potito papilla leche de continuacion biberon chupete toallita de bebe'
 };
