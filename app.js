@@ -297,7 +297,8 @@ function vCatalog() {
 function vList() {
   const f = F(); const t0 = startOfToday();
   const rows = f.lista.filter(r => (!r.comprado || Number(r.comprado) >= t0) && f.productos.some(p => p.id === r.productoId && p.activo !== false));
-  let h = `<div class="top"><span class="fam-name">Lista de la compra</span><span class="count">${syncDot()}${listCount()} por comprar${listCount() ? '<button class="mic" data-act="buyAll">✓ Todo comprado</button>' : ''}</span></div><div class="frames">`;
+  const nBought = rows.filter(r => r.comprado).length;
+  let h = `<div class="top"><span class="fam-name">Lista de la compra</span><span class="count">${syncDot()}${listCount()} por comprar${listCount() ? '<button class="mic" data-act="buyAll">✓ Todo comprado</button>' : nBought ? '<button class="mic" data-act="emptyBought">🧹 Vaciar lista</button>' : ''}</span></div><div class="frames">`;
   let any = false;
   const shown = supers().filter(s => rows.some(r => (superById(r.superId) || {}).id === s.id));
   supers().forEach(s => {
@@ -305,13 +306,14 @@ function vList() {
       .sort((a, b) => (a.comprado ? 1 : 0) - (b.comprado ? 1 : 0));
     if (!mine.length) return; any = true;
     const k = shown.indexOf(s), pend = mine.filter(r => !r.comprado).length;
-    h += `<div class="frame sup" data-super="${s.id}" style="--c:${s.color}"><span class="frame-t">${logoImg(s, '')}${esc(s.nombre)}</span>${pend ? `<span class="frame-c"><button class="mv" data-act="buyAll" data-id="${s.id}">✓ Comprado</button></span>` : ''}${shown.length > 1 ? `<span class="frame-r">` : ''}${k > 0 ? `<button class="mv" data-act="superMove" data-id="${s.id}" data-o="${shown[k - 1] && shown[k - 1].id}" aria-label="Subir">▲</button>` : '<button class="mv" style="visibility:hidden" tabindex="-1">▲</button>'}${k < shown.length - 1 ? `<button class="mv" data-act="superMove" data-id="${s.id}" data-o="${shown[k + 1] && shown[k + 1].id}" aria-label="Bajar">▼</button>` : '<button class="mv" style="visibility:hidden" tabindex="-1">▼</button>'}${shown.length > 1 ? '</span>' : ''}<div class="bricks">` +
+    h += `<div class="frame sup" data-super="${s.id}" style="--c:${s.color}"><span class="frame-t">${logoImg(s, '')}${esc(s.nombre)}</span>${pend ? `<span class="frame-c"><button class="mv" data-act="buyAll" data-id="${s.id}">✓ Comprado</button></span>` : ''}${shown.length > 1 ? `<span class="frame-r">${k > 0 ? `<button class="mv" data-act="superMove" data-id="${s.id}" data-o="${shown[k - 1] && shown[k - 1].id}" aria-label="Subir">▲</button>` : '<button class="mv" style="visibility:hidden" tabindex="-1">▲</button>'}${k < shown.length - 1 ? `<button class="mv" data-act="superMove" data-id="${s.id}" data-o="${shown[k + 1] && shown[k + 1].id}" aria-label="Bajar">▼</button>` : '<button class="mv" style="visibility:hidden" tabindex="-1">▼</button>'}</span>` : ''}<div class="bricks">` +
       mine.map(r => {
         const p = f.productos.find(x => x.id === r.productoId), pe = personaById(r.personaId);
         return `<button class="b ${r.comprado ? 'done' : 'on'}" style="--s:${s.color};--t:${ink(s.color)}${pe ? ';--p:' + pe.color : ''}" data-buy="${r.productoId}">${pe ? '<span class="pd"></span>' : ''}${esc(p.nombre)}${Number(r.cantidad) > 1 ? `<span class="q">${r.cantidad}</span>` : ''}</button>`;
       }).join('') + `</div></div>`;
   });
   h += '</div>';
+  if (nBought && listCount()) h += `<div style="text-align:center;margin-top:12px"><button class="mic clr" style="margin:0" data-act="emptyBought">🧹 Vaciar comprados (${nBought})</button></div>`;
   h += any ? '<p class="hint">Toca lo que metes en el carro: sale tachado y vuelve al catálogo. Mantén pulsado para cambiarlo de súper, de persona o de cantidad, o mantén pulsado y arrástralo a otro súper.</p>' : '<div class="empty">La lista está vacía.<br>Toca productos en el catálogo.</div>';
   return h;
 }
@@ -803,6 +805,14 @@ document.addEventListener('click', e => {
       if (!rs.length) return;
       rs.forEach(r => doOp({ op: 'buy', productoId: r.productoId, value: true }));
       toast(`${rs.length} comprado${rs.length === 1 ? '' : 's'}`, () => rs.forEach(r => doOp({ op: 'buy', productoId: r.productoId, value: false })));
+      break;
+    }
+    case 'emptyBought': {
+      // Quita de la lista lo ya comprado (tachado); lo pendiente se queda
+      const rs = f.lista.filter(r => r.comprado).map(r => Object.assign({}, r));
+      if (!rs.length) return;
+      rs.forEach(r => doOp({ op: 'removeItem', productoId: r.productoId }));
+      toast(`Lista vaciada: ${rs.length} quitado${rs.length === 1 ? '' : 's'}`, () => rs.forEach(r => { doOp({ op: 'setItem', productoId: r.productoId, cantidad: Number(r.cantidad) || 1, personaId: r.personaId, superId: r.superId }); doOp({ op: 'buy', productoId: r.productoId, value: true }); }));
       break;
     }
     case 'pickEmoji': { const x = f.supers.find(y => y.id === S.pop.id); if (x) doOp(Object.assign({ op: 'upsertSuper' }, x, { logo: v || '' })); break; }
