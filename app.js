@@ -286,10 +286,10 @@ function brickCatalog(p) {
 }
 function vCatalog() {
   const f = F();
-  let h = `<div class="top"><span class="fam-btn"><span class="fam-name">${esc(f.nombre)}</span>${DEMO ? '<span class="demo-tag">PRUEBA</span>' : ''}</span>${S.editCat ? '<button class="btn pri" data-act="editDone">Terminar</button>' : `<span class="count">${syncDot()}${listCount()} en la lista${listCount() ? '<button class="mic clr" data-act="clearMarks" aria-label="Desmarcar todo">✕ Todo</button>' : ''}${vozBtn('lista', '🎤 Dictar', '')}</span>`}</div>${S.editCat ? `<div class="tools">${vozBtn('productos', '🎤 Dictar productos nuevos', 'margin:0')}<button class="mic" style="margin:0" data-act="clasificar">Clasificar en categorías</button></div><p class="hint" style="margin:0 0 12px;text-align:left">Arrastra un producto a otra categoría para moverlo. Toca ✕ para quitarlo. Ordena las categorías con ▲ ▼.</p>` : ''}<div class="frames">`;
+  let h = `<div class="top"><span class="fam-btn"><span class="fam-name">${esc(f.nombre)}</span>${DEMO ? '<span class="demo-tag">PRUEBA</span>' : ''}</span>${S.editCat ? '<button class="btn pri" data-act="editDone">Terminar</button>' : `<span class="count">${syncDot()}${listCount()} en la lista${listCount() ? '<button class="mic clr" data-act="clearMarks" aria-label="Desmarcar todo">✕ Todo</button>' : ''}${vozBtn('lista', '🎤 Dictar', '')}</span>`}</div>${S.editCat ? `<div class="tools">${vozBtn('productos', '🎤 Dictar productos nuevos', 'margin:0')}<button class="mic" style="margin:0" data-act="clasificar">Clasificar en categorías</button></div><p class="hint" style="margin:0 0 12px;text-align:left">Toca un producto o el nombre de una categoría (✎) para cambiarle el nombre. Arrastra un producto a otra categoría para moverlo. Toca ✕ para quitarlo. Ordena las categorías con ▲ ▼.</p>` : ''}<div class="frames">`;
   act(f.categorias.map(c => Object.assign({ activo: true }, c))).forEach(c => {
     const ps = act(f.productos).filter(p => p.categoriaId === c.id);
-    h += `<div class="frame" data-cat="${c.id}" style="--c:${c.color}"><span class="frame-t">${esc(c.nombre)}${S.editCat ? `<button class="mv" data-act="catMove" data-id="${c.id}" data-v="-1" aria-label="Subir">▲</button><button class="mv" data-act="catMove" data-id="${c.id}" data-v="1" aria-label="Bajar">▼</button>` : ps.some(p => inList(p.id)) ? `<button class="mv" data-act="clearMarks" data-id="${c.id}" aria-label="Desmarcar ${esc(c.nombre)}">✕ desmarcar</button>` : ''}</span><div class="bricks">${ps.map(brickCatalog).join('')}<button class="b dash" data-act="newProduct" data-cat="${c.id}">Nuevo</button></div></div>`;
+    h += `<div class="frame" data-cat="${c.id}" style="--c:${c.color}"><span class="frame-t">${S.editCat ? `<button class="mv" style="border:0;margin:0;padding:0;font:inherit;color:inherit;background:none" data-act="clasRename" data-k="categorias" data-id="${c.id}">${esc(c.nombre)} ✎</button>` : esc(c.nombre)}${S.editCat ? `<button class="mv" data-act="catMove" data-id="${c.id}" data-v="-1" aria-label="Subir">▲</button><button class="mv" data-act="catMove" data-id="${c.id}" data-v="1" aria-label="Bajar">▼</button>` : ps.some(p => inList(p.id)) ? `<button class="mv" data-act="clearMarks" data-id="${c.id}" aria-label="Desmarcar ${esc(c.nombre)}">✕ desmarcar</button>` : ''}</span><div class="bricks">${ps.map(brickCatalog).join('')}<button class="b dash" data-act="newProduct" data-cat="${c.id}">Nuevo</button></div></div>`;
   });
   if (S.editCat) h += `<button class="b dash" data-act="newCategory" style="align-self:flex-start;font-size:calc(15px*var(--k))">+ Nueva categoría</button>`;
   return h + '</div><div style="height:12px"></div>';
@@ -650,7 +650,8 @@ document.addEventListener('click', e => {
   if (pb) {
     if (lpFired) { lpFired = false; return; }
     const p = f.productos.find(x => x.id === pb.dataset.pid); if (!p) return;
-    if (S.editCat) return;
+    // En Organizar, tocar un producto (sin arrastrarlo) permite cambiarle el nombre
+    if (S.editCat) { S.sheet = { type: 'rename', k: 'productos', id: p.id, nombre: p.nombre }; renderOverlay(); return; }
     // Doble toque: si ya estaba marcado, lo desmarca; si no, abre persona/súper/cantidad
     if (tapT && tapId === p.id) { clearTimeout(tapT); tapT = null; if (inList(p.id)) { doOp({ op: 'removeItem', productoId: p.id }); toast(`${p.nombre} desmarcado`); } else openItemPop(p); return; }
     clearTimeout(tapT); tapId = p.id;
