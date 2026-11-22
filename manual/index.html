@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1F7A55">
+<link rel="icon" href="../icon-192.png">
+</head>
+<body>
+<title>Manual de Cesta</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;700&display=swap">
+<style>
+/* Layout: una columna estrecha; cada función es un «marco» de color como las categorías de la app, con el vídeo del móvil al lado (o debajo en el móvil) */
+:root{
+  --bg:#F4F6F2; --surface:#FFFFFF; --ink:#15302A; --muted:#5B6E66; --line:#D6DFD8;
+  --accent:#1F7A55; --accent-ink:#FFFFFF; --hi:#E0A100; --tip:#FFF6DB; --tip-ink:#5A4300;
+  --c-fruta:#4E9A2A; --c-frescos:#C94848; --c-despensa:#C48A1C; --c-higiene:#3D6FC2; --c-limpieza:#1A8C93; --c-morado:#7A5BD6;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111D19; --surface:#18261F; --ink:#E6EFEA; --muted:#9AB0A7; --line:#2B3C35;
+  --accent:#4CC08D; --accent-ink:#0B1A14; --hi:#F2B92B; --tip:#2A2511; --tip-ink:#F3D98A;
+  --c-fruta:#7BC255; --c-frescos:#E57878; --c-despensa:#E0AC45; --c-higiene:#7AA2E8; --c-limpieza:#4FC2C8; --c-morado:#A68CF0;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111D19; --surface:#18261F; --ink:#E6EFEA; --muted:#9AB0A7; --line:#2B3C35;
+  --accent:#4CC08D; --accent-ink:#0B1A14; --hi:#F2B92B; --tip:#2A2511; --tip-ink:#F3D98A;
+  --c-fruta:#7BC255; --c-frescos:#E57878; --c-despensa:#E0AC45; --c-higiene:#7AA2E8; --c-limpieza:#4FC2C8; --c-morado:#A68CF0;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:17px/1.55 var(--f-body);margin:0;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:0 48px}
+.wrap{max-width:880px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.15;margin:0}
+p{margin:0}
+a{color:var(--accent);font-weight:700}
+a:focus-visible,button:focus-visible{outline:3px solid var(--hi);outline-offset:2px;border-radius:6px}
+
+/* Portada */
+.hero{padding-block:36px 20px;display:grid;gap:14px}
+.logo{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:800;font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.logo svg{width:30px;height:30px}
+.hero h1{font-size:clamp(34px, 8vw, 54px);font-weight:800;letter-spacing:-.01em}
+.hero .lead{font-size:19px;max-width:38ch;color:var(--muted)}
+.lead b{color:var(--ink)}
+
+/* Ladrillos como los de la app */
+.bricks{display:flex;flex-wrap:wrap;gap:8px}
+.b{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:7px;padding:6px 11px;font:600 15px/1.2 var(--f-body);text-decoration:none}
+.b.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.toc{margin-top:6px}
+.toc .b:hover{border-color:var(--accent)}
+
+/* Marcos de sección: el título va encima del borde, como las categorías */
+.frame{--c:var(--accent);position:relative;border:2px solid var(--c);border-radius:var(--r);padding:26px 18px 20px;margin-top:34px;scroll-margin-top:16px}
+.frame > .ft{position:absolute;top:-12px;left:14px;background:var(--bg);padding:0 8px;font:800 13px/22px var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--c)}
+.frame h2{font-size:clamp(23px, 5vw, 30px);margin-bottom:10px}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:26px;align-items:start}
+.cols > div{min-width:0;display:grid;gap:12px;align-content:start}
+@media (max-width:680px){.cols{grid-template-columns:minmax(0,1fr)}.phone{justify-self:center}}
+
+/* Gestos */
+.do{display:grid;gap:10px;margin:4px 0 0;padding:0;list-style:none}
+.do li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:baseline}
+.g{display:inline-block;min-width:112px;text-align:center;font:700 12px/1 var(--f-body);letter-spacing:.06em;text-transform:uppercase;padding:7px 8px;border-radius:999px;background:var(--c, var(--accent));color:#fff}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .g{color:#0E1A15}}
+:root[data-theme="dark"] .g{color:#0E1A15}
+.pill{display:inline-block;padding:1px 8px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:.92em;white-space:nowrap}
+.pill.red{background:#C8372D;border-color:#C8372D;color:#fff}
+
+/* Móvil con vídeo */
+.phone{width:100%;max-width:250px;border-radius:30px;padding:8px;background:#0F1A16;box-shadow:0 12px 30px rgba(15,40,30,.22)}
+.phone video{display:block;width:100%;height:auto;aspect-ratio:390/720;border-radius:23px;background:#F4F6F2}
+.cap{font-size:13px;color:var(--muted);text-align:center;margin-top:8px}
+
+/* Avisos */
+.tip{background:var(--tip);color:var(--tip-ink);border-radius:10px;padding:12px 14px;font-size:16px}
+.tip b{color:inherit}
+.steps{counter-reset:s;display:grid;gap:12px;margin:6px 0 0;padding:0;list-style:none}
+.steps li{counter-increment:s;display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;align-items:start}
+.steps li::before{content:counter(s);display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--c, var(--accent));color:var(--bg);font:800 14px var(--f-display)}
+.warn{display:grid;gap:10px;border:1px dashed var(--line);border-radius:10px;padding:14px;background:var(--surface)}
+.warn h3{font-size:18px}
+.screen-txt{font-family:ui-monospace, "SF Mono", Menlo, monospace;font-size:14px;background:var(--bg);border-radius:6px;padding:2px 6px}
+
+/* Preguntas */
+details{border-top:1px solid var(--line);padding:12px 0}
+details:last-child{border-bottom:1px solid var(--line)}
+summary{cursor:pointer;font-weight:700;list-style:none;display:flex;gap:10px;align-items:baseline}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"+";font:800 18px var(--f-display);color:var(--accent);width:14px}
+details[open] summary::before{content:"–"}
+details p{margin-top:8px;color:var(--muted)}
+footer{margin-top:40px;color:var(--muted);font-size:14px;text-align:center}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+html{scroll-behavior:smooth}
+</style>
+
+<div class="wrap">
+<header class="hero">
+  <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="7" width="11" height="7" rx="2" fill="#4E9A2A"/><rect x="16" y="7" width="13" height="7" rx="2" fill="#C94848"/><rect x="3" y="17" width="15" height="7" rx="2" fill="#C48A1C"/><rect x="20" y="17" width="9" height="7" rx="2" fill="#3D6FC2"/></svg>Cesta</div>
+  <h1>La lista de la compra de casa, en el móvil de todos</h1>
+  <p class="lead">Tocas lo que falta y aparece en la lista de los demás. En el súper lo vas tachando. <b>Cada vídeo dura unos segundos</b> y se repite solo.</p>
+  <nav class="bricks toc" aria-label="Índice">
+    <a class="b on" href="#empezar">Primeros pasos</a>
+    <a class="b" href="#apuntar">Apuntar</a>
+    <a class="b" href="#ventanita">Persona y súper</a>
+    <a class="b" href="#desmarcar">Desmarcar</a>
+    <a class="b" href="#dictar">🎤 Dictar</a>
+    <a class="b" href="#super">En el súper</a>
+    <a class="b" href="#ordenar">Ordenar súpers</a>
+    <a class="b" href="#ajustes">Ajustes</a>
+    <a class="b" href="#organizar">Organizar</a>
+    <a class="b" href="#dudas">Preguntas</a>
+  </nav>
+</header>
+
+<!-- 1. Primeros pasos -->
+<section class="frame" id="empezar" style="--c:var(--accent)">
+  <span class="ft">Primeros pasos</span>
+  <h2>Abrir Cesta y tenerla como una app</h2>
+  <div style="display:grid;gap:14px">
+    <p>Cada familia tiene su propia Cesta: una hoja de cálculo de Google que es solo vuestra. Nadie de fuera ve vuestra lista, ni siquiera quien os la ha pasado.</p>
+    <ol class="steps">
+      <li><span>Abre en el móvil el <b>enlace de vuestra Cesta</b> (os lo pasa quien la ha montado). Entra con el <b>Gmail</b> que esa persona ha apuntado.</span></li>
+      <li><span>La primera vez Google enseña un aviso de permisos. Más abajo te explicamos qué es y qué pulsar.</span></li>
+      <li><span>Ponla en la pantalla de inicio para abrirla como una app:<br>
+        <b>Android:</b> menú <span class="pill">⋮</span> de Chrome › <span class="pill">Añadir a pantalla de inicio</span>.<br>
+        <b>iPhone:</b> en Safari, <span class="pill">Compartir</span> › <span class="pill">Añadir a pantalla de inicio</span>.</span></li>
+    </ol>
+    <div class="warn">
+      <h3>«Google no ha verificado esta aplicación»</h3>
+      <p>Sale una sola vez. Google lo dice de cualquier app casera que no ha pasado por su revisión. Cesta solo lee y escribe en <b>vuestra hoja</b>, no en el resto de tu cuenta.</p>
+      <p>Pulsa <span class="screen-txt">Configuración avanzada</span> y luego <span class="screen-txt">Ir a … (no seguro)</span>. Después, <span class="screen-txt">Permitir</span>.</p>
+    </div>
+    <div class="warn">
+      <h3>La franja de Google arriba</h3>
+      <p>Arriba verás una franja gris que dice que la aplicación la ha creado un usuario de Google Apps Script. Es normal: Google la pone siempre en estas apps y no se puede quitar. Puedes ignorarla.</p>
+    </div>
+    <div class="tip">Si tienes <b>varias cuentas de Google</b> en el móvil y te sale un error de acceso, abre el enlace en una pestaña de incógnito y entra solo con el Gmail que tiene permiso.</div>
+  </div>
+</section>
+
+<!-- 2. Apuntar -->
+<section class="frame" id="apuntar" style="--c:var(--c-fruta)">
+  <span class="ft">Catálogo</span>
+  <div class="cols">
+    <div>
+      <h2>Apuntar lo que falta</h2>
+      <p>La primera pantalla es el <b>catálogo</b>: todos los productos de casa, agrupados en marcos de colores (Fruta y verdura, Frescos, Despensa…).</p>
+      <ul class="do">
+        <li><span class="g">Toca</span><span>El producto se pone de color: ya está en la lista.</span></li>
+        <li><span class="g">Toca otra vez</span><span>Suma uno. Sale un número pequeño: <b>Leche 2</b>.</span></li>
+        <li><span class="g">Doble toque</span><span>Si ya estaba marcado, lo desmarca.</span></li>
+      </ul>
+      <p>El color del producto es el del súper donde se compra. Arriba ves cuántas cosas hay en la lista.</p>
+    </div>
+    <figure class="phone" style="margin:0"><video src="v/anadir.mp4" poster="v/anadir.jpg" muted loop playsinline preload="metadata" aria-label="Vídeo: tocar Leche dos veces, Plátanos y Pan tostado; doble toque en Plátanos lo desmarca"></video></figure>
+  </div>
+</section>
+
+<!-- 3. Ventanita -->
+<section class="frame" id="ventanita" style="--c:var(--c-frescos)">
+  <span class="ft">Mantén pulsado</span>
+  <div class="cols">
+    <div>
+      <h2>Para quién, en qué súper y cuántos</h2>
+      <p><span class="g" style="min-width:0">Mantén pulsado</span> un producto y sale una ventanita:</p>
+      <ul class="do">
+        <li><span class="g" style="--c:var(--c-morado)">Círculos</span><span>Las personas (A de Ana, P de Pablo…). Sale un puntito de su color en el producto. Sin persona es para todos.</span></li>
+        <li><span class="g" style="--c:var(--c-higiene)">Logos</span><span>El súper o la tienda. Con <span class="pill">+</span> añades uno nuevo ahí mismo.</span></li>
+        <li><span class="g" style="--c:var(--c-despensa)">− 1 +</span><span>La cantidad. La <span class="pill">✕</span> lo quita de la lista.</span></li>
+      </ul>
+      <p>Toca fuera para cerrar. La próxima vez que lo apuntes, Cesta recuerda el súper y la persona.</p>
+    </div>
+    <figure class="phone" style="margin:0"><video src="v/ventanita.mp4" poster="v/ventanita.jpg" muted loop playsinline preload="metadata" aria-label="Vídeo: mantener pulsado Café, elegir Pablo, Lidl y cantidad 2"></video></figure>
+  </div>
+</section>
+
+<!-- 4. Desmarcar -->
+<section class="frame" id="desmarcar" style="--c:var(--c-despensa)">
+  <span class="ft">Desmarcar</span>
+  <div class="cols">
+    <div>
+      <h2>Quitar marcas de golpe</h2>
+      <ul class="do">
+        <li><span class="g">✕ desmarcar</span><span>En la esquina de cada marco. Quita lo marcado solo en esa categoría.</span></li>
+        <li><span class="g">✕ Todo</span><span>Arriba. Quita todo lo marcado del catálogo.</span></li>
+      </ul>
+      <p>Si te equivocas, pulsa <span class="pill">Deshacer</span> en el aviso negro de abajo. Dura unos segundos.</p>
+    </div>
+    <figure class="phone" style="margin:0"><video src="v/desmarcar.mp4" poster="v/desmarcar.jpg" muted loop playsinline preload="metadata" aria-label="Vídeo: desmarcar Fruta y verdura y luego todo"></video></figure>
+  </div>
+</section>
+
+<!-- 5. Dictar -->
+<section class="frame" id="dictar" style="--c:var(--c-higiene)">
+  <span class="ft">🎤 Dictar</span>
+  <div class="cols">
+    <div>
+      <h2>Dictar la lista hablando</h2>
+      <ol class="steps" style="--c:var(--c-higiene)">
+        <li><span>Toca <span class="pill">🎤 Dictar</span>. Se abre una página aparte con tu catálogo y el botón se pone <span class="pill red">● Escuchando</span>, rojo y parpadeando.</span></li>
+        <li><span>Di los productos seguidos, con pausas si quieres: <i>«dos ajos en Mercadona», «leche y plátanos para Lucía», «jamón»</i>. Lo que entiende se marca en amarillo.</span></li>
+        <li><span>Al acabar di <b>«listo»</b> (o toca el botón rojo). Vuelves a Cesta y se apunta todo.</span></li>
+        <li><span>Solo te pregunta las dudas. Aquí, «jamón» puede ser tapas, serrano o York: tocas el que es y <span class="pill">Apuntar</span>.</span></li>
+      </ol>
+      <div class="tip">La primera vez el móvil pide permiso para el <b>micrófono</b>: dale a Permitir. Si no te funciona, usa el micrófono del teclado.</div>
+    </div>
+    <figure class="phone" style="margin:0"><video src="v/dictar.mp4" poster="v/dictar.jpg" muted loop playsinline preload="metadata" aria-label="Vídeo: dictar ajos, leche, plátanos y jamón; elegir Jamón York y apuntar"></video></figure>
+  </div>
+</section>
+
+<!-- 6. En el súper -->
+<section class="frame" id="super" style="--c:var(--c-limpieza)">
+  <span class="ft">Lista</span>
+  <div class="cols">
+    <div>
+      <h2>En el súper: ir tachando</h2>
+      <p>Abajo, <span class="pill">Lista</span>. Lo que hay que comprar aparece separado por súper o tienda.</p>
+      <ul class="do">
+        <li><span class="g">Toca</span><span>Lo metes en el carro: sale tachado y vuelve a quedar libre en el catálogo.</span></li>
+        <li><span class="g">✓ Comprado</span><span>En el marco de un súper: tacha todo lo de ese súper.</span></li>
+        <li><span class="g">✓ Todo comprado</span><span>Arriba: tacha toda la lista.</span></li>
+        <li><span class="g">🧹 Vaciar</span><span>Quita lo tachado de la lista. Si queda algo pendiente sale abajo como <span class="pill">🧹 Vaciar comprados</span>; si está todo comprado, arriba como <span class="pill">🧹 Vaciar lista</span>.</span></li>
+      </ul>
+      <p>Todo tiene <span class="pill">Deshacer</span>. Lo tachado se borra solo al día siguiente, aunque no lo vacíes.</p>
+    </div>
+    <figure class="phone" style="margin:0"><video src="v/lista.mp4" poster="v/lista.jpg" muted loop playsinline preload="metadata" aria-label="Vídeo: tachar productos, Comprado en Frutería, Todo comprado y Vaciar lista"></video></figure>
+  </div>
+</section>
+
+<!-- 7. Ordenar súpers -->
+<section class="frame" id="ordenar" style="--c:var(--c-morado)">
+  <span class="ft">Lista</span>
+  <div class="cols">
+    <div>
+      <h2>Ordenar súpers y cambiar cosas de súper</h2>
+      <ul class="do">
+        <li><span class="g">▲ ▼</span><span>A la derecha de cada súper: súbelo o bájalo para seguir el orden de tu ruta.</span></li>
+        <li><span class="g">Mantén y arrastra</span><span>Mantén pulsado un producto y llévalo a otro súper. Cesta lo recuerda para la próxima vez.</span></li>
+        <li><span class="g">Mantén y suelta</span><span>Sin moverlo, sale la ventanita de persona, súper y cantidad.</span></li>
+      </ul>
+    </div>
+    <figure class="phone" style="margin:0"><video src="v/ordenar.mp4" poster="v/ordenar.jpg" muted loop playsinline preload="metadata" aria-label="Vídeo: subir Frutería arriba y arrastrar Café de Mercadona a Lidl"></video></figure>
+  </div>
+</section>
+
+<!-- 8. Ajustes -->
+<section class="frame" id="ajustes" style="--c:var(--c-fruta)">
+  <span class="ft">Ajustes</span>
+  <div class="cols">
+    <div>
+      <h2>Personas, súpers y tiendas</h2>
+      <ul class="do">
+        <li><span class="g">+ Nuevo</span><span>En <b>Personas</b> escribes un nombre. En <b>Supermercados y tiendas</b> eliges uno con logo (Mercadona, Lidl, Aldi, Gadis…) o una tienda: Frutería 🍎, Pescadería 🐟, Carnicería 🥩, Panadería 🥖, Farmacia 💊, Droguería 🧴.</span></li>
+        <li><span class="g">Toca uno</span><span>Cambias su color, lo renombras o lo quitas con <span class="pill">✕ Quitar</span>.</span></li>
+        <li><span class="g">Aspecto</span><span>Claro u oscuro, y <b>Colores sólidos</b> o <b>Colores suaves</b> si los fuertes te cansan la vista.</span></li>
+        <li><span class="g">Tamaño</span><span>Las cuatro <b>A</b> cambian el tamaño de la letra.</span></li>
+      </ul>
+    </div>
+    <figure class="phone" style="margin:0"><video src="v/ajustes.mp4" poster="v/ajustes.jpg" muted loop playsinline preload="metadata" aria-label="Vídeo: añadir a Marcos y la Pescadería, cambiar el color de Pablo y pasar a colores suaves"></video></figure>
+  </div>
+</section>
+
+<!-- 9. Organizar -->
+<section class="frame" id="organizar" style="--c:var(--c-frescos)">
+  <span class="ft">Ajustes › Organizar</span>
+  <div class="cols">
+    <div>
+      <h2>Ordenar el catálogo a vuestra manera</h2>
+      <p>En Ajustes, toca <span class="pill">Organizar: mover, quitar y añadir categorías</span>. Al acabar, <span class="pill">Terminar</span>.</p>
+      <ul class="do">
+        <li><span class="g">▲ ▼</span><span>Sube o baja una categoría entera.</span></li>
+        <li><span class="g">Arrastra</span><span>Lleva un producto a otra categoría.</span></li>
+        <li><span class="g">Toca</span><span>Un producto, o el nombre de una categoría (✎), para cambiarle el nombre.</span></li>
+        <li><span class="g">✕</span><span>Quita un producto del catálogo (con Deshacer).</span></li>
+        <li><span class="g">Nuevo</span><span>Al final de cada marco, para añadir un producto.</span></li>
+      </ul>
+    </div>
+    <figure class="phone" style="margin:0"><video src="v/organizar.mp4" poster="v/organizar.jpg" muted loop playsinline preload="metadata" aria-label="Vídeo: subir Frescos, mover Gelatinas a Despensa y renombrar Det. baño"></video></figure>
+  </div>
+</section>
+
+<section class="frame" id="clasificar" style="--c:var(--c-morado)">
+  <span class="ft">Ajustes › Organizar</span>
+  <div class="cols">
+    <div>
+      <h2>Nueva categoría y «Clasificar»</h2>
+      <ol class="steps" style="--c:var(--c-morado)">
+        <li><span>Abajo del todo, <span class="pill">+ Nueva categoría</span>. Por ejemplo, <b>Carnicería</b>.</span></li>
+        <li><span>Arriba, <span class="pill">Clasificar en categorías</span>. Cesta propone qué productos cambiaría de sitio.</span></li>
+        <li><span>Quita con <span class="pill">✕</span> lo que no quieras mover y pulsa <span class="pill">Mover</span>.</span></li>
+      </ol>
+      <p>Con <span class="pill">🎤 Dictar productos nuevos</span> añades muchos productos de una vez, hablando.</p>
+    </div>
+    <figure class="phone" style="margin:0"><video src="v/clasificar.mp4" poster="v/clasificar.jpg" muted loop playsinline preload="metadata" aria-label="Vídeo: crear Carnicería y mover a ella solomillo, hígado, carne y pollo"></video></figure>
+  </div>
+</section>
+
+<!-- Preguntas -->
+<section class="frame" id="dudas" style="--c:var(--muted)">
+  <span class="ft">Preguntas</span>
+  <h2>Preguntas rápidas</h2>
+  <div>
+    <details><summary>¿Los demás ven lo que apunto al momento?</summary><p>Sí. Cada móvil se actualiza solo cada pocos segundos. El puntito verde de arriba indica que está guardado.</p></details>
+    <details><summary>¿Quién puede entrar?</summary><p>Solo los Gmail apuntados en la pestaña <b>Config</b> de vuestra hoja. Para añadir a alguien, quien la gestiona escribe su Gmail ahí y usa el menú <b>Cesta › Dar acceso</b>.</p></details>
+    <details><summary>¿Otra familia puede ver nuestra lista?</summary><p>No. Cada familia tiene su propia copia de la hoja, con su propia dirección.</p></details>
+    <details><summary>Apunté algo por error</summary><p>Doble toque en el producto del catálogo, o pulsa <b>Deshacer</b> en el aviso de abajo.</p></details>
+    <details><summary>El dictado no me entiende</summary><p>Habla despacio y separa los productos con pausas o con «y». Si sigue fallando, usa el micrófono del teclado del móvil.</p></details>
+    <details><summary>Quiero montar una Cesta para mi familia</summary><p>Hace falta un ordenador y unos 10 minutos: copiar la hoja, apuntar vuestros Gmail y publicar la app. Las instrucciones están en <a href="https://github.com/antuanet71/cesta#readme" target="_blank" rel="noopener">la guía de puesta en marcha</a>.</p></details>
+  </div>
+</section>
+
+<footer>Los nombres de los vídeos (Ana, Pablo, Lucía) son de ejemplo.</footer>
+</div>
+
+<script>
+(function () {
+  var vids = [].slice.call(document.querySelectorAll('video'));
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce || !('IntersectionObserver' in window)) { vids.forEach(function (v) { v.controls = true; }); return; }
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (e) {
+      var v = e.target;
+      if (e.isIntersecting) { var p = v.play(); if (p && p.catch) p.catch(function () { v.controls = true; }); }
+      else v.pause();
+    });
+  }, { threshold: 0.35 });
+  vids.forEach(function (v) { io.observe(v); });
+})();
+</script>
+
+</body>
+</html>
