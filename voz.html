@@ -61,32 +61,28 @@ main{padding:14px 10px calc(20px + env(safe-area-inset-bottom,0px));display:flex
   var prods = [];
   snap.forEach(function (c) { (c[2] || []).forEach(function (p) { prods.push({ nombre: p[0], activo: true, en: p[1] || '', qty: p[2] || 0 }); }); });
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  // El catálogo se pinta una sola vez (no se mueve mientras hablas); lo dictado se revisa al volver a la app
   function pinta() {
-    var V = window.CestaVoz, dic = {}, nuevos = [];
-    if (V) V.parse(ta.value, prods).forEach(function (it) {
-      var m = V.match(it.name, prods);
-      if (m.exact) dic[m.exact.nombre] = (dic[m.exact.nombre] || 0) + it.qty;
-      else nuevos.push({ n: it.name.charAt(0).toUpperCase() + it.name.slice(1), q: it.qty, dudas: m.options.length });
-    });
     var html = '';
-    if (nuevos.length) html += '<div class="frame" style="--c:var(--hi)"><span class="ft">Nuevos o con dudas (te pregunto al volver)</span><div class="bricks">' +
-      nuevos.map(function (x) { return '<span class="b dic new">' + esc(x.n) + (x.q > 1 ? ' <span class="q n">×' + x.q + '</span>' : '') + '</span>'; }).join('') + '</div></div>';
     snap.forEach(function (c) {
       html += '<div class="frame" style="--c:' + esc(c[1]) + '"><span class="ft">' + esc(c[0]) + '</span><div class="bricks">' + (c[2] || []).map(function (p) {
-        var on = !!p[1], d = dic[p[0]];
-        return '<button class="b' + (on ? ' on' : '') + (d ? ' dic' : '') + '"' + (on ? ' style="--s:' + esc(p[1]) + '"' : '') + ' data-n="' + esc(p[0]) + '">' + esc(p[0]) +
-          (on && p[2] > 1 ? ' <span class="q">' + p[2] + '</span>' : '') + (d ? ' <span class="q n">' + (d > 1 ? '×' + d : '✓') + '</span>' : '') + '</button>';
+        var on = !!p[1];
+        return '<button class="b' + (on ? ' on' : '') + '"' + (on ? ' style="--s:' + esc(p[1]) + '"' : '') + ' data-n="' + esc(p[0]) + '">' + esc(p[0]) +
+          (on && p[2] > 1 ? ' <span class="q">' + p[2] + '</span>' : '') + '</button>';
       }).join('') + '</div></div>';
     });
-    if (snap.length) html += '<p class="legend">En color, lo que ya está en la lista. Con borde amarillo, lo que acabas de dictar. Toca un producto para añadirlo al texto.</p>';
+    if (snap.length) html += '<p class="legend">En color, lo que ya está en la lista. Toca un producto para añadirlo al texto.</p>';
     cat.innerHTML = html;
   }
+  function cuenta() {
+    var n = window.CestaVoz ? window.CestaVoz.parse(ta.value, prods).length : 0;
+    return n ? 'Llevo ' + n + ' producto' + (n === 1 ? '' : 's') + '. ' : '';
+  }
   cat.addEventListener('click', function (e) {
-    var b = e.target.closest('[data-n]'); if (!b || b.classList.contains('dic')) return;
+    var b = e.target.closest('[data-n]'); if (!b) return;
     ta.value = (ta.value.trim() ? ta.value.trim().replace(/,\s*$/, '') + ', ' : '') + b.dataset.n.toLowerCase();
-    pinta();
+    b.style.outline = '3px solid var(--hi)';
   });
-  ta.addEventListener('input', pinta);
   pinta();
 
   function volver(conTexto) {
@@ -107,7 +103,15 @@ main{padding:14px 10px calc(20px + env(safe-area-inset-bottom,0px));display:flex
       var t = ''; for (var i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
       t = t.trim(); if (!t) return;
       oido = true; mudos = 0;
-      ta.value = (base ? base + ', ' : '') + t; pinta();
+      // Decir «ya», «listo», «terminado», «eso es todo»… al final termina y vuelve a la app
+      var last = e.results[e.results.length - 1], fin = /(?:^|[\s,.])(ya está|ya|listo|lista|terminado|termina|fin|eso es todo|nada más)[.!]?$/i;
+      if (last && last.isFinal && fin.test(t)) {
+        t = t.replace(fin, '').trim();
+        ta.value = (base ? base + (t ? ', ' : '') : '') + t;
+        parar(); volver(true); return;
+      }
+      ta.value = (base ? base + ', ' : '') + t;
+      est.textContent = cuenta() + 'Escuchando… di «listo» para terminar.';
     };
     rec.onerror = function (e) {
       if (/not-allowed|service-not-allowed/.test(e.error)) { escuchando = false; est.innerHTML = '<span class="err">Hay que dar permiso al micrófono: candado de la barra de direcciones › Permisos › Micrófono.</span>'; }
@@ -126,7 +130,7 @@ main{padding:14px 10px calc(20px + env(safe-area-inset-bottom,0px));display:flex
   function empezar() {
     if (escuchando) { parar(); est.textContent = 'Parado. Toca el micrófono para seguir, o Listo.'; return; }
     escuchando = true; mudos = 0; mic.classList.add('live');
-    est.textContent = 'Escuchando… di los productos con pausas. Toca el micrófono para parar.';
+    est.textContent = 'Escuchando… di los productos y, al acabar, «listo».';
     arranca();
   }
   mic.addEventListener('click', empezar);
