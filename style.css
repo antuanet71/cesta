@@ -111,6 +111,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
 .ch{border:1.5px solid var(--c,var(--line));color:var(--c,var(--ink));background:var(--surface);border-radius:999px;padding:calc(3px*var(--k)) calc(9px*var(--k));font-size:calc(12px*var(--k));font-weight:700}
 .ch.on{background:var(--c,var(--accent));color:#fff}
 .mic{border:0;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:calc(4px*var(--k)) calc(10px*var(--k));font-weight:800;font-size:calc(12.5px*var(--k));margin-left:8px}
+.mic.clr{background:none;color:var(--muted);border:1.5px solid var(--line)}
 .mic.live{background:var(--danger);color:#fff;animation:blink 1s infinite}
 .tools{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
 .emo{font-size:calc(14px*var(--k));line-height:1;flex:none}

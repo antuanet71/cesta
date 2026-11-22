@@ -117,6 +117,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
 .ch{border:1.5px solid var(--c,var(--line));color:var(--c,var(--ink));background:var(--surface);border-radius:999px;padding:calc(3px*var(--k)) calc(9px*var(--k));font-size:calc(12px*var(--k));font-weight:700}
 .ch.on{background:var(--c,var(--accent));color:#fff}
 .mic{border:0;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:calc(4px*var(--k)) calc(10px*var(--k));font-weight:800;font-size:calc(12.5px*var(--k));margin-left:8px}
+.mic.clr{background:none;color:var(--muted);border:1.5px solid var(--line)}
 .mic.live{background:var(--danger);color:#fff;animation:blink 1s infinite}
 .tools{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
 .emo{font-size:calc(14px*var(--k));line-height:1;flex:none}
@@ -658,10 +659,10 @@ function brickCatalog(p) {
 }
 function vCatalog() {
   const f = F();
-  let h = `<div class="top"><span class="fam-btn"><span class="fam-name">${esc(f.nombre)}</span>${DEMO ? '<span class="demo-tag">PRUEBA</span>' : ''}</span>${S.editCat ? '<button class="btn pri" data-act="editDone">Terminar</button>' : `<span class="count">${syncDot()}${listCount()} en la lista<button class="mic" data-act="voz" data-v="lista" aria-label="Dictar la lista de la compra">🎤 Dictar</button></span>`}</div>${S.editCat ? '<div class="tools"><button class="mic" style="margin:0" data-act="voz" data-v="productos">🎤 Dictar productos nuevos</button><button class="mic" style="margin:0" data-act="clasificar">Clasificar en categorías</button></div><p class="hint" style="margin:0 0 12px;text-align:left">Arrastra un producto a otra categoría para moverlo. Toca ✕ para quitarlo. Ordena las categorías con ▲ ▼.</p>' : ''}<div class="frames">`;
+  let h = `<div class="top"><span class="fam-btn"><span class="fam-name">${esc(f.nombre)}</span>${DEMO ? '<span class="demo-tag">PRUEBA</span>' : ''}</span>${S.editCat ? '<button class="btn pri" data-act="editDone">Terminar</button>' : `<span class="count">${syncDot()}${listCount()} en la lista${listCount() ? '<button class="mic clr" data-act="clearMarks" aria-label="Desmarcar todo">✕ Todo</button>' : ''}<button class="mic" data-act="voz" data-v="lista" aria-label="Dictar la lista de la compra">🎤 Dictar</button></span>`}</div>${S.editCat ? '<div class="tools"><button class="mic" style="margin:0" data-act="voz" data-v="productos">🎤 Dictar productos nuevos</button><button class="mic" style="margin:0" data-act="clasificar">Clasificar en categorías</button></div><p class="hint" style="margin:0 0 12px;text-align:left">Arrastra un producto a otra categoría para moverlo. Toca ✕ para quitarlo. Ordena las categorías con ▲ ▼.</p>' : ''}<div class="frames">`;
   act(f.categorias.map(c => Object.assign({ activo: true }, c))).forEach(c => {
     const ps = act(f.productos).filter(p => p.categoriaId === c.id);
-    h += `<div class="frame" data-cat="${c.id}" style="--c:${c.color}"><span class="frame-t">${esc(c.nombre)}${S.editCat ? `<button class="mv" data-act="catMove" data-id="${c.id}" data-v="-1" aria-label="Subir">▲</button><button class="mv" data-act="catMove" data-id="${c.id}" data-v="1" aria-label="Bajar">▼</button>` : ''}</span><div class="bricks">${ps.map(brickCatalog).join('')}<button class="b dash" data-act="newProduct" data-cat="${c.id}">Nuevo</button></div></div>`;
+    h += `<div class="frame" data-cat="${c.id}" style="--c:${c.color}"><span class="frame-t">${esc(c.nombre)}${S.editCat ? `<button class="mv" data-act="catMove" data-id="${c.id}" data-v="-1" aria-label="Subir">▲</button><button class="mv" data-act="catMove" data-id="${c.id}" data-v="1" aria-label="Bajar">▼</button>` : ps.some(p => inList(p.id)) ? `<button class="mv" data-act="clearMarks" data-id="${c.id}" aria-label="Desmarcar ${esc(c.nombre)}">✕ desmarcar</button>` : ''}</span><div class="bricks">${ps.map(brickCatalog).join('')}<button class="b dash" data-act="newProduct" data-cat="${c.id}">Nuevo</button></div></div>`;
   });
   if (S.editCat) h += `<button class="b dash" data-act="newCategory" style="align-self:flex-start;font-size:calc(15px*var(--k))">+ Nueva categoría</button>`;
   return h + '</div><div style="height:12px"></div>';
@@ -1104,6 +1105,16 @@ document.addEventListener('click', e => {
     case 'vozCat': { const o = S.sheet.items[Number(el.dataset.i)]; o.cat = v; o.guess = false; renderOverlay(); break; }
     case 'vozOk': vozApply(); break;
     case 'clasificar': clasificar(); break;
+    case 'clearMarks': {
+      // Desmarca lo apuntado (todo o una categoría). Se puede deshacer.
+      const cid = el.dataset.id;
+      const rows = f.lista.filter(r => !r.comprado && f.productos.some(p => p.id === r.productoId && p.activo !== false && (!cid || p.categoriaId === cid))).map(r => clone(r));
+      if (!rows.length) return;
+      rows.forEach(r => doOp({ op: 'removeItem', productoId: r.productoId }));
+      const c = cid ? catOf(cid) : null;
+      toast(`${rows.length} desmarcado${rows.length === 1 ? '' : 's'}${c ? ' en ' + c.nombre : ''}`, () => rows.forEach(r => doOp({ op: 'setItem', productoId: r.productoId, cantidad: r.cantidad, personaId: r.personaId, superId: r.superId })));
+      break;
+    }
     case 'clasToggle': { const m = S.sheet.moves[Number(v)]; m.on = !m.on; renderOverlay(); break; }
     case 'clasCat': { const m = S.sheet.moves[Number(el.dataset.i)]; m.to = v; m.on = true; renderOverlay(); break; }
     case 'clasOk': {
