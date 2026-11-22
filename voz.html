@@ -29,9 +29,7 @@ main{padding:14px 10px calc(20px + env(safe-area-inset-bottom,0px));display:flex
 .bricks{display:flex;flex-wrap:wrap;gap:8px}
 .b{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:6px;padding:5px 8px;font:inherit;font-size:14px;font-weight:600}
 .b.on{background:var(--s);border-color:var(--s);color:#fff}
-.b.dic{outline:3px solid var(--hi);outline-offset:1px;font-weight:800}
 .q{font-size:11px;font-weight:800;background:rgba(0,0,0,.18);border-radius:8px;padding:0 5px}
-.b.dic .q.n{background:var(--hi);color:#1b1b1b}
 .new{border-style:dashed}
 .legend{font-size:12px;color:var(--muted);margin:0 4px}
 </style>
@@ -44,7 +42,7 @@ main{padding:14px 10px calc(20px + env(safe-area-inset-bottom,0px));display:flex
   <div class="row"><a class="btn sec" id="cancelar" href="#">Cancelar</a><a class="btn pri" id="listo" href="#">Listo</a></div>
 </div>
 <main id="cat"></main>
-<script src="voz.js"></script>
+<script src="voz.js?v=4"></script>
 <script>
 (function () {
   var q = new URLSearchParams(location.search);
@@ -58,7 +56,8 @@ main{padding:14px 10px calc(20px + env(safe-area-inset-bottom,0px));display:flex
   /* ---- catálogo que manda la app (tras #d=) ---- */
   var snap = [];
   try { var h = location.hash.match(/[#&]d=([^&]*)/); if (h) snap = JSON.parse(decodeURIComponent(h[1])); } catch (e) { snap = []; }
-  var prods = [];
+  var prods = [], tiendas = [];
+  try { var hs = location.hash.match(/[#&]s=([^&]*)/); if (hs) tiendas = JSON.parse(decodeURIComponent(hs[1])); } catch (e) { tiendas = []; }
   snap.forEach(function (c) { (c[2] || []).forEach(function (p) { prods.push({ nombre: p[0], activo: true, en: p[1] || '', qty: p[2] || 0 }); }); });
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   // El catálogo se pinta una sola vez (no se mueve mientras hablas); lo dictado se revisa al volver a la app
@@ -75,13 +74,13 @@ main{padding:14px 10px calc(20px + env(safe-area-inset-bottom,0px));display:flex
     cat.innerHTML = html;
   }
   function cuenta() {
-    var n = window.CestaVoz ? window.CestaVoz.parse(ta.value, prods).length : 0;
+    var n = window.CestaVoz ? window.CestaVoz.parse(ta.value, prods, tiendas).length : 0;
     return n ? 'Llevo ' + n + ' producto' + (n === 1 ? '' : 's') + '. ' : '';
   }
   cat.addEventListener('click', function (e) {
     var b = e.target.closest('[data-n]'); if (!b) return;
     ta.value = (ta.value.trim() ? ta.value.trim().replace(/,\s*$/, '') + ', ' : '') + b.dataset.n.toLowerCase();
-    b.style.outline = '3px solid var(--hi)';
+    b.disabled = true; b.style.opacity = '.5';
   });
   pinta();
 

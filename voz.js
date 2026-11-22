@@ -54,10 +54,34 @@ function splitRun(part, productos) {
   flush();
   return out.length ? out : [part];
 }
-function parse(text, productos) {
+// «ajos mercadona», «arroz froiz»: el nombre de un súper o tienda sin «en» delante
+function markShops(part, tiendas) {
+  if (!tiendas || !tiendas.length) return part;
+  const ts = tiendas.map(x => ({ n: x.nombre || x, k: key(x.nombre || x) })).filter(x => x.k);
+  const ws = part.split(' ').filter(Boolean), out = [];
+  for (let i = 0; i < ws.length; i++) {
+    let hit = null, len = 0;
+    if (STOP.has(strip(ws[i]))) { out.push(ws[i]); continue; }
+    for (let n = Math.min(3, ws.length - i); n >= 1 && !hit; n--) {
+      const k = key(ws.slice(i, i + n).join(' '));
+      if (!k || STOP.has(k)) continue;
+      hit = ts.find(t => t.k === k) || (k.length >= 4 ? ts.find(t => t.k.split(' ')[0] === k || t.k.startsWith(k + ' ')) : null);
+      if (hit) len = n;
+    }
+    if (!hit) { out.push(ws[i]); continue; }
+    const prev = out.length ? strip(out[out.length - 1]) : '';
+    if (/^(en|del|de|el|la)$/.test(prev)) { while (out.length && /^(en|del|de|el|la)$/.test(strip(out[out.length - 1]))) out.pop(); }
+    if (out.length) out.push('en'); 
+    out.push(hit.n.replace(/\s+/g, '\u00a0'));
+    i += len - 1;
+  }
+  return out.join(' ');
+}
+function parse(text, productos, tiendas) {
   const t = String(text || '').replace(/\s+/g, ' ').trim();
   if (!t) return [];
   let parts = t.split(/\s*(?:,|;|\.|\n|\by\b(?=\s)|\be\b(?=\s+[aeiouáéíóú])|\bademás\b|\btambién\b)\s*/i).map(x => x.trim()).filter(Boolean);
+  if (tiendas) parts = parts.map(x => markShops(x, tiendas));
   if (productos) parts = [].concat.apply([], parts.map(x => splitRun(x, productos)));
   const out = [];
   parts.forEach(raw => {
@@ -219,5 +243,5 @@ function findByName(list, name) {
   return list.find(x => key(x.nombre) === k) || list.find(x => key(x.nombre).startsWith(k) || k.startsWith(key(x.nombre))) || null;
 }
 
-window.CestaVoz = { parse, match, classify, findByName, key, strip, splitRun };
+window.CestaVoz = { parse, match, classify, findByName, key, strip, splitRun, markShops };
 })();

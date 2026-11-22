@@ -47,6 +47,7 @@ const isEmoji = l => !!l && !BRANDS[l] && /[^\x00-\x7F]/.test(l);
 const V = window.CestaVoz;
 /* Dentro de Google el micrófono está bloqueado: se dicta en esta página y vuelve a la app con el texto */
 const VOZ_URL = 'https://antuanet71.github.io/cesta/voz.html';
+const VOZ_V = 4; // sube al cambiar voz.html, para que el móvil no use la copia vieja
 const cap = t => { t = String(t || '').trim(); return t ? t[0].toUpperCase() + t.slice(1) : t; };
 const PALETTE = ['#3B6FD8', '#D9467A', '#E08A1E', '#2E9E6A', '#7A5BD6', '#0E9AA7', '#C8372D', '#8A6B4E', '#6B7A75', '#D4A20B', '#1E8E57', '#0050AA'];
 
@@ -277,7 +278,7 @@ function brickCatalog(p) {
 }
 function vCatalog() {
   const f = F();
-  let h = `<div class="top"><span class="fam-btn"><span class="fam-name">${esc(f.nombre)}</span>${DEMO ? '<span class="demo-tag">PRUEBA</span>' : ''}</span>${S.editCat ? '<button class="btn pri" data-act="editDone">Terminar</button>' : `<span class="count">${syncDot()}${listCount()} en la lista${listCount() ? '<button class="mic clr" data-act="clearMarks" aria-label="Desmarcar todo">✕ Todo</button>' : ''}<button class="mic" data-act="voz" data-v="lista" aria-label="Dictar la lista de la compra">🎤 Dictar</button></span>`}</div>${S.editCat ? '<div class="tools"><button class="mic" style="margin:0" data-act="voz" data-v="productos">🎤 Dictar productos nuevos</button><button class="mic" style="margin:0" data-act="clasificar">Clasificar en categorías</button></div><p class="hint" style="margin:0 0 12px;text-align:left">Arrastra un producto a otra categoría para moverlo. Toca ✕ para quitarlo. Ordena las categorías con ▲ ▼.</p>' : ''}<div class="frames">`;
+  let h = `<div class="top"><span class="fam-btn"><span class="fam-name">${esc(f.nombre)}</span>${DEMO ? '<span class="demo-tag">PRUEBA</span>' : ''}</span>${S.editCat ? '<button class="btn pri" data-act="editDone">Terminar</button>' : `<span class="count">${syncDot()}${listCount()} en la lista${listCount() ? '<button class="mic clr" data-act="clearMarks" aria-label="Desmarcar todo">✕ Todo</button>' : ''}${vozBtn('lista', '🎤 Dictar', '')}</span>`}</div>${S.editCat ? `<div class="tools">${vozBtn('productos', '🎤 Dictar productos nuevos', 'margin:0')}<button class="mic" style="margin:0" data-act="clasificar">Clasificar en categorías</button></div><p class="hint" style="margin:0 0 12px;text-align:left">Arrastra un producto a otra categoría para moverlo. Toca ✕ para quitarlo. Ordena las categorías con ▲ ▼.</p>` : ''}<div class="frames">`;
   act(f.categorias.map(c => Object.assign({ activo: true }, c))).forEach(c => {
     const ps = act(f.productos).filter(p => p.categoriaId === c.id);
     h += `<div class="frame" data-cat="${c.id}" style="--c:${c.color}"><span class="frame-t">${esc(c.nombre)}${S.editCat ? `<button class="mv" data-act="catMove" data-id="${c.id}" data-v="-1" aria-label="Subir">▲</button><button class="mv" data-act="catMove" data-id="${c.id}" data-v="1" aria-label="Bajar">▼</button>` : ps.some(p => inList(p.id)) ? `<button class="mv" data-act="clearMarks" data-id="${c.id}" aria-label="Desmarcar ${esc(c.nombre)}">✕ desmarcar</button>` : ''}</span><div class="bricks">${ps.map(brickCatalog).join('')}<button class="b dash" data-act="newProduct" data-cat="${c.id}">Nuevo</button></div></div>`;
@@ -423,7 +424,7 @@ function showWhere(p) {
 }
 function vozAnalyze(text, mode) {
   const f = F();
-  return V.parse(text, f.productos).map(it => {
+  return V.parse(text, f.productos, supers()).map(it => {
     const sup = it.en ? V.findByName(supers(), it.en) : null;
     const name = sup || !it.en ? it.name : it.full;
     const per = it.para ? V.findByName(personas(), it.para) : null;
@@ -437,11 +438,16 @@ function vozAnalyze(text, mode) {
     return o;
   });
 }
-function vozOutUrl() {
-  const sh = S.sheet || {};
+// Dentro de Google, «Dictar» va directo a la página de dictado (allí sí hay micrófono)
+function vozBtn(mode, label, style) {
+  if (GAS && F().appUrl) return `<a class="mic" target="_top" style="text-decoration:none;${style}" href="${esc(vozOutUrl(mode))}">${label}</a>`;
+  return `<button class="mic" style="${style}" data-act="voz" data-v="${mode}">${label}</button>`;
+}
+function vozOutUrl(mode) {
+  const sh = mode ? { mode } : (S.sheet || {});
   // El catálogo va tras «#» (no sale del móvil): la página de dictado lo enseña mientras hablas
   const snap = cats().map(c => [c.nombre, c.color, act(F().productos).filter(p => p.categoriaId === c.id).map(p => { const r = inList(p.id); return r ? [p.nombre, (superById(r.superId) || {}).color || '#666', Number(r.cantidad) || 1] : [p.nombre]; })]);
-  return VOZ_URL + '?modo=' + (sh.mode || 'lista') + '&texto=' + encodeURIComponent(sh.text || '') + '&vuelta=' + encodeURIComponent(F().appUrl || '') + '#d=' + encodeURIComponent(JSON.stringify(snap));
+  return VOZ_URL + '?modo=' + (sh.mode || 'lista') + '&texto=' + encodeURIComponent(sh.text || '') + '&vuelta=' + encodeURIComponent(F().appUrl || '') + '&v=' + VOZ_V + '#d=' + encodeURIComponent(JSON.stringify(snap)) + '&s=' + encodeURIComponent(JSON.stringify(supers().map(x => x.nombre)));
 }
 // Al volver de la página de dictado, la URL trae ?dictado=…&modo=…
 let vozBack = null;
@@ -456,8 +462,13 @@ function openVozBack() {
   if (!vozBack || !S.fam) return;
   const b = vozBack; vozBack = null;
   if (b.mode === 'productos') { S.editCat = true; S.view = 'catalog'; }
+  if (!b.text.trim()) { render(); return; }
   S.sheet = { type: 'voz', mode: b.mode, step: 'input', text: b.text, items: [] };
-  if (b.text.trim()) { const items = vozAnalyze(b.text, b.mode); if (items.length) { S.sheet.items = items; S.sheet.step = 'review'; } }
+  const items = vozAnalyze(b.text, b.mode);
+  if (!items.length) { S.sheet = null; render(); toast('No he entendido ningún producto'); return; }
+  S.sheet.items = items; S.sheet.step = 'review';
+  // Sin dudas: se apunta directamente, sin confirmar
+  if (!items.some(vozNeeds)) { render(); vozApply(); return; }
   render();
 }
 const vozNeeds = o => !o.skip && !o.pid && (!o.isNew || !o.cat);
@@ -714,7 +725,9 @@ document.addEventListener('click', e => {
       stopRec();
       const items = vozAnalyze(S.sheet.text, S.sheet.mode);
       if (!items.length) { toast('No he entendido ningún producto'); return; }
-      S.sheet.items = items; S.sheet.step = 'review'; renderOverlay(); break;
+      S.sheet.items = items; S.sheet.step = 'review';
+      if (!items.some(vozNeeds)) { vozApply(); break; }
+      renderOverlay(); break;
     }
     case 'vozBack': S.sheet.step = 'input'; renderOverlay(); break;
     case 'vozSkip': { const o = S.sheet.items[Number(v)]; o.skip = !o.skip; renderOverlay(); break; }
