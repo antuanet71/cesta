@@ -1,5 +1,5 @@
 // Guarda la app para que abra sin cobertura. Los datos van siempre a Google.
-const CACHE = 'cesta-v3';
+const CACHE = 'cesta-v4';
 const FILES = ['./', 'index.html', 'style.css', 'voz.js', 'app.js', 'manifest.json', 'icon-192.png',
   'logos/mercadona.png', 'logos/lidl.png', 'logos/aldi.png', 'logos/alimerka.png', 'logos/froiz.png', 'logos/gadis.png', 'logos/elcorte.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });

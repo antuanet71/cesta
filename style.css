@@ -55,7 +55,14 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
 .b.kill .grip{opacity:.5;font-size:calc(12px*var(--k))}
 .b.kill .x{border:0;background:none;padding:0 calc(5px*var(--k));font:inherit;color:var(--danger);font-weight:800}
 .b.dragging{opacity:.3}
-.frame-t .mv{border:1.5px solid var(--c);background:var(--bg);color:var(--c);border-radius:6px;font-size:calc(11px*var(--k));line-height:1;padding:calc(3px*var(--k)) calc(7px*var(--k));margin-left:calc(4px*var(--k))}
+.frame-t .mv,.frame-r .mv,.frame-c .mv{border:0;background:none;color:var(--c);font:inherit;font-size:calc(11px*var(--k));font-weight:800;line-height:inherit;padding:0 calc(5px*var(--k));margin:0;letter-spacing:.02em;cursor:pointer}
+.frame-r,.frame-c{position:absolute;top:calc(-10px*var(--k));background:var(--bg);padding:0 calc(3px*var(--k));line-height:calc(17px*var(--k));display:flex;align-items:center;gap:calc(8px*var(--k));color:var(--c);text-transform:uppercase}
+.frame-r{right:10px}
+.frame-c{left:50%;transform:translateX(-50%);white-space:nowrap}
+.frame.sup .frame-t{max-width:calc(50% - 10px - 34px*var(--k));padding:0 5px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:block;letter-spacing:0;text-transform:none;font-size:calc(12px*var(--k))}
+.frame.sup .frame-t img{vertical-align:middle;margin-right:3px}
+.frame.cat .frame-t{max-width:calc(100% - 120px*var(--k))}
+.b.lift{transform:scale(1.06);box-shadow:0 4px 12px rgba(0,0,0,.25)}
 .drag-ghost{position:fixed;z-index:50;pointer-events:none;box-shadow:0 8px 20px rgba(0,0,0,.3);transform:scale(1.08);background:var(--surface)}
 .frame.drop{background:color-mix(in srgb,var(--c) 14%,transparent)}
 .frames > .b.dash{align-self:flex-start}

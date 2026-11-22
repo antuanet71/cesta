@@ -61,7 +61,14 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
 .b.kill .grip{opacity:.5;font-size:calc(12px*var(--k))}
 .b.kill .x{border:0;background:none;padding:0 calc(5px*var(--k));font:inherit;color:var(--danger);font-weight:800}
 .b.dragging{opacity:.3}
-.frame-t .mv{border:1.5px solid var(--c);background:var(--bg);color:var(--c);border-radius:6px;font-size:calc(11px*var(--k));line-height:1;padding:calc(3px*var(--k)) calc(7px*var(--k));margin-left:calc(4px*var(--k))}
+.frame-t .mv,.frame-r .mv,.frame-c .mv{border:0;background:none;color:var(--c);font:inherit;font-size:calc(11px*var(--k));font-weight:800;line-height:inherit;padding:0 calc(5px*var(--k));margin:0;letter-spacing:.02em;cursor:pointer}
+.frame-r,.frame-c{position:absolute;top:calc(-10px*var(--k));background:var(--bg);padding:0 calc(3px*var(--k));line-height:calc(17px*var(--k));display:flex;align-items:center;gap:calc(8px*var(--k));color:var(--c);text-transform:uppercase}
+.frame-r{right:10px}
+.frame-c{left:50%;transform:translateX(-50%);white-space:nowrap}
+.frame.sup .frame-t{max-width:calc(50% - 10px - 34px*var(--k));padding:0 5px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:block;letter-spacing:0;text-transform:none;font-size:calc(12px*var(--k))}
+.frame.sup .frame-t img{vertical-align:middle;margin-right:3px}
+.frame.cat .frame-t{max-width:calc(100% - 120px*var(--k))}
+.b.lift{transform:scale(1.06);box-shadow:0 4px 12px rgba(0,0,0,.25)}
 .drag-ghost{position:fixed;z-index:50;pointer-events:none;box-shadow:0 8px 20px rgba(0,0,0,.3);transform:scale(1.08);background:var(--surface)}
 .frame.drop{background:color-mix(in srgb,var(--c) 14%,transparent)}
 .frames > .b.dash{align-self:flex-start}
@@ -725,7 +732,7 @@ function vCatalog() {
   let h = `<div class="top"><span class="fam-btn"><span class="fam-name">${esc(f.nombre)}</span>${DEMO ? '<span class="demo-tag">PRUEBA</span>' : ''}</span>${S.editCat ? '<button class="btn pri" data-act="editDone">Terminar</button>' : `<span class="count">${syncDot()}${listCount()} en la lista${listCount() ? '<button class="mic clr" data-act="clearMarks" aria-label="Desmarcar todo">✕ Todo</button>' : ''}${vozBtn('lista', '🎤 Dictar', '')}</span>`}</div>${S.editCat ? `<div class="tools">${vozBtn('productos', '🎤 Dictar productos nuevos', 'margin:0')}<button class="mic" style="margin:0" data-act="clasificar">Clasificar en categorías</button></div><p class="hint" style="margin:0 0 12px;text-align:left">Toca un producto o el nombre de una categoría (✎) para cambiarle el nombre. Arrastra un producto a otra categoría para moverlo. Toca ✕ para quitarlo. Ordena las categorías con ▲ ▼.</p>` : ''}<div class="frames">`;
   act(f.categorias.map(c => Object.assign({ activo: true }, c))).forEach(c => {
     const ps = act(f.productos).filter(p => p.categoriaId === c.id);
-    h += `<div class="frame" data-cat="${c.id}" style="--c:${c.color}"><span class="frame-t">${S.editCat ? `<button class="mv" style="border:0;margin:0;padding:0;font:inherit;color:inherit;background:none" data-act="clasRename" data-k="categorias" data-id="${c.id}">${esc(c.nombre)} ✎</button>` : esc(c.nombre)}${S.editCat ? `<button class="mv" data-act="catMove" data-id="${c.id}" data-v="-1" aria-label="Subir">▲</button><button class="mv" data-act="catMove" data-id="${c.id}" data-v="1" aria-label="Bajar">▼</button>` : ps.some(p => inList(p.id)) ? `<button class="mv" data-act="clearMarks" data-id="${c.id}" aria-label="Desmarcar ${esc(c.nombre)}">✕ desmarcar</button>` : ''}</span><div class="bricks">${ps.map(brickCatalog).join('')}<button class="b dash" data-act="newProduct" data-cat="${c.id}">Nuevo</button></div></div>`;
+    h += `<div class="frame cat" data-cat="${c.id}" style="--c:${c.color}"><span class="frame-t">${S.editCat ? `<button class="mv" style="padding:0" data-act="clasRename" data-k="categorias" data-id="${c.id}">${esc(c.nombre)} ✎</button>` : esc(c.nombre)}</span>${S.editCat ? `<span class="frame-r"><button class="mv" data-act="catMove" data-id="${c.id}" data-v="-1" aria-label="Subir">▲</button><button class="mv" data-act="catMove" data-id="${c.id}" data-v="1" aria-label="Bajar">▼</button></span>` : ps.some(p => inList(p.id)) ? `<span class="frame-r"><button class="mv" data-act="clearMarks" data-id="${c.id}" aria-label="Desmarcar ${esc(c.nombre)}">✕ desmarcar</button></span>` : ''}<div class="bricks">${ps.map(brickCatalog).join('')}<button class="b dash" data-act="newProduct" data-cat="${c.id}">Nuevo</button></div></div>`;
   });
   if (S.editCat) h += `<button class="b dash" data-act="newCategory" style="align-self:flex-start;font-size:calc(15px*var(--k))">+ Nueva categoría</button>`;
   return h + '</div><div style="height:12px"></div>';
@@ -741,14 +748,14 @@ function vList() {
       .sort((a, b) => (a.comprado ? 1 : 0) - (b.comprado ? 1 : 0));
     if (!mine.length) return; any = true;
     const k = shown.indexOf(s), pend = mine.filter(r => !r.comprado).length;
-    h += `<div class="frame" style="--c:${s.color}"><span class="frame-t">${logoImg(s, '')}${esc(s.nombre)}${k > 0 ? `<button class="mv" data-act="superMove" data-id="${s.id}" data-o="${shown[k - 1] && shown[k - 1].id}" aria-label="Subir">▲</button>` : ''}${k < shown.length - 1 ? `<button class="mv" data-act="superMove" data-id="${s.id}" data-o="${shown[k + 1] && shown[k + 1].id}" aria-label="Bajar">▼</button>` : ''}${pend ? `<button class="mv" data-act="buyAll" data-id="${s.id}">✓ Comprado${pend > 1 ? ' (' + pend + ')' : ''}</button>` : ''}</span><div class="bricks">` +
+    h += `<div class="frame sup" data-super="${s.id}" style="--c:${s.color}"><span class="frame-t">${logoImg(s, '')}${esc(s.nombre)}</span>${pend ? `<span class="frame-c"><button class="mv" data-act="buyAll" data-id="${s.id}">✓ Comprado</button></span>` : ''}${shown.length > 1 ? `<span class="frame-r">` : ''}${k > 0 ? `<button class="mv" data-act="superMove" data-id="${s.id}" data-o="${shown[k - 1] && shown[k - 1].id}" aria-label="Subir">▲</button>` : '<button class="mv" style="visibility:hidden" tabindex="-1">▲</button>'}${k < shown.length - 1 ? `<button class="mv" data-act="superMove" data-id="${s.id}" data-o="${shown[k + 1] && shown[k + 1].id}" aria-label="Bajar">▼</button>` : '<button class="mv" style="visibility:hidden" tabindex="-1">▼</button>'}${shown.length > 1 ? '</span>' : ''}<div class="bricks">` +
       mine.map(r => {
         const p = f.productos.find(x => x.id === r.productoId), pe = personaById(r.personaId);
         return `<button class="b ${r.comprado ? 'done' : 'on'}" style="--s:${s.color};--t:${ink(s.color)}${pe ? ';--p:' + pe.color : ''}" data-buy="${r.productoId}">${pe ? '<span class="pd"></span>' : ''}${esc(p.nombre)}${Number(r.cantidad) > 1 ? `<span class="q">${r.cantidad}</span>` : ''}</button>`;
       }).join('') + `</div></div>`;
   });
   h += '</div>';
-  h += any ? '<p class="hint">Toca lo que metes en el carro: sale tachado y vuelve al catálogo. Mantén pulsado para cambiarlo de súper, de persona o de cantidad.</p>' : '<div class="empty">La lista está vacía.<br>Toca productos en el catálogo.</div>';
+  h += any ? '<p class="hint">Toca lo que metes en el carro: sale tachado y vuelve al catálogo. Mantén pulsado para cambiarlo de súper, de persona o de cantidad, o mantén pulsado y arrástralo a otro súper.</p>' : '<div class="empty">La lista está vacía.<br>Toca productos en el catálogo.</div>';
   return h;
 }
 function vSettings() {
@@ -1060,11 +1067,15 @@ document.addEventListener('pointerdown', e => {
   const bid = b.dataset.pid || b.dataset.buy;
   if (b.dataset.buy && !inList(bid)) return;
   b.classList.add('press');
+  const pid0 = e.pointerId, x0 = e.clientX, y0 = e.clientY;
   lp = setTimeout(() => {
     lpFired = true; b.classList.remove('press');
     const p = F().productos.find(x => x.id === bid); if (!p) return;
     clearTimeout(tapT); tapT = null;
-    openItemPop(p);
+    // En la Lista: al mantener pulsado el producto se "levanta"; si lo sueltas sin moverlo
+    // se abre persona/súper/cantidad, y si lo arrastras puedes llevarlo a otro súper
+    if (b.dataset.buy) { b.classList.add('lift'); drag = { pid: bid, el: b, x0, y0, started: false, id: pid0, list: true }; }
+    else openItemPop(p);
     try { navigator.vibrate && navigator.vibrate(15); } catch (_) {}
   }, 450);
 });
@@ -1316,7 +1327,7 @@ document.addEventListener('pointermove', e => {
   e.preventDefault();
   drag.ghost.style.left = (e.clientX - drag.dx) + 'px'; drag.ghost.style.top = (e.clientY - drag.dy) + 'px';
   document.querySelectorAll('.frame.drop').forEach(x => x.classList.remove('drop'));
-  const fr = document.elementFromPoint(e.clientX, e.clientY); const frame = fr && fr.closest('.frame[data-cat]');
+  const fr = document.elementFromPoint(e.clientX, e.clientY); const frame = fr && fr.closest(drag.list ? '.frame[data-super]' : '.frame[data-cat]');
   if (frame) frame.classList.add('drop');
   const sc = document.querySelector('.screen'); clearInterval(scrollT);
   if (sc) { const H = window.innerHeight; const v = e.clientY < 90 ? -12 : e.clientY > H - 110 ? 12 : 0; if (v) scrollT = setInterval(() => { sc.scrollTop += v; }, 16); }
@@ -1325,10 +1336,25 @@ function endDrag(e) {
   if (!drag || (e && e.pointerId !== drag.id)) return;
   clearInterval(scrollT);
   const d = drag; drag = null;
-  if (!d.started) return;
+  if (d.list) d.el.classList.remove('lift');
+  if (!d.started) {
+    if (d.list && e && e.type === 'pointerup') { const p = F().productos.find(x => x.id === d.pid); if (p) openItemPop(p); }
+    return;
+  }
   dragJustEnded = true; setTimeout(() => { dragJustEnded = false; }, 300);
   d.ghost.remove(); d.el.classList.remove('dragging');
   document.querySelectorAll('.frame.drop').forEach(x => x.classList.remove('drop'));
+  if (d.list) {
+    const fr = e && document.elementFromPoint(e.clientX, e.clientY); const frame = fr && fr.closest('.frame[data-super]');
+    const r = rowOf(d.pid), p = F().productos.find(x => x.id === d.pid);
+    const sid = frame && frame.dataset.super;
+    if (r && p && sid && (superById(r.superId) || {}).id !== sid) {
+      doOp({ op: 'setItem', productoId: p.id, cantidad: Number(r.cantidad), personaId: r.personaId, superId: sid });
+      doOp({ op: 'setProductSuper', productoId: p.id, superId: sid });
+      toast(`${p.nombre} → ${(superById(sid) || {}).nombre || ''}`);
+    }
+    return;
+  }
   const fr = e && document.elementFromPoint(e.clientX, e.clientY); const frame = fr && fr.closest('.frame[data-cat]');
   const p = F().productos.find(x => x.id === d.pid);
   if (frame && p && frame.dataset.cat !== p.categoriaId) {
@@ -1337,6 +1363,7 @@ function endDrag(e) {
     toast(`${p.nombre} → ${c ? c.nombre : ''}`);
   }
 }
+document.addEventListener('touchmove', e => { if (drag && drag.list) e.preventDefault(); }, { passive: false });
 document.addEventListener('pointerup', endDrag);
 document.addEventListener('pointercancel', endDrag);
 
