@@ -481,7 +481,7 @@ function vVoz() {
     else if (p) st = `${o.known ? '' : 'Elegido · '}${esc(catName(p))}${extra ? ' · ' + esc(extra) : ''}`;
     else if (o.options.length && !o.isNew) {
       st = '¿Cuál?';
-      body = `<div class="chips">${o.options.map(id => { const q = prodOf(id); return `<button class="ch" data-act="vozPick" data-i="${i}" data-v="${id}">${esc(q.nombre)}</button>`; }).join('')}<button class="ch" style="--c:var(--muted)" data-act="vozNew" data-i="${i}">Otro nuevo</button></div>`;
+      body = `<div class="chips">${o.options.map(id => { const q = prodOf(id); return `<button class="ch" data-act="vozPick" data-i="${i}" data-v="${id}">${esc(q.nombre)}</button>`; }).join('')}<button class="ch" style="--c:var(--muted)" data-act="vozNew" data-i="${i}">Otro nuevo</button>${o.options.length > 1 ? `<button class="ch on" style="--c:var(--accent)" data-act="vozAll" data-i="${i}">Apuntar ${o.options.length === 2 ? 'los dos' : 'todos'}</button>` : ''}</div>`;
     } else {
       st = o.cat ? (o.guess ? 'Nuevo · lo pondría en' : 'Nuevo en') : '¿En qué categoría lo pongo?';
       if (o.options.length) st = `Parecido a ${esc(o.options.map(id => prodOf(id).nombre).join(', '))}. ` + st;
@@ -719,6 +719,11 @@ document.addEventListener('click', e => {
     case 'vozBack': S.sheet.step = 'input'; renderOverlay(); break;
     case 'vozSkip': { const o = S.sheet.items[Number(v)]; o.skip = !o.skip; renderOverlay(); break; }
     case 'vozPick': { const o = S.sheet.items[Number(el.dataset.i)]; o.pid = v; o.isNew = false; renderOverlay(); break; }
+    case 'vozAll': {
+      const k = Number(el.dataset.i), o = S.sheet.items[k];
+      S.sheet.items.splice(k, 1, ...o.options.map(id => Object.assign({}, o, { pid: id, options: [], isNew: false, known: true, name: prodOf(id).nombre })));
+      renderOverlay(); break;
+    }
     case 'vozNew': { const o = S.sheet.items[Number(el.dataset.i)]; o.pid = ''; o.isNew = true; renderOverlay(); break; }
     case 'vozCat': { const o = S.sheet.items[Number(el.dataset.i)]; o.cat = v; o.guess = false; renderOverlay(); break; }
     case 'vozOk': vozApply(); break;
