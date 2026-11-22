@@ -5,53 +5,101 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cesta · Dictar</title>
 <style>
-:root{--bg:#F4F6F2;--surface:#fff;--ink:#15302A;--muted:#62736C;--line:#DCE3DD;--accent:#1F7A55;--accent-ink:#fff;--danger:#C8372D;color-scheme:light}
-@media (prefers-color-scheme: dark){:root{--bg:#111D19;--surface:#16231F;--ink:#E6EFEA;--muted:#9AB0A7;--line:#2A3B35;--accent:#4CC08D;--accent-ink:#0B1A14;color-scheme:dark}}
+:root{--bg:#F4F6F2;--surface:#fff;--ink:#15302A;--muted:#62736C;--line:#DCE3DD;--accent:#1F7A55;--accent-ink:#fff;--danger:#C8372D;--hi:#E0A100;color-scheme:light}
+@media (prefers-color-scheme: dark){:root{--bg:#111D19;--surface:#16231F;--ink:#E6EFEA;--muted:#9AB0A7;--line:#2A3B35;--accent:#4CC08D;--accent-ink:#0B1A14;--hi:#F2B92B;color-scheme:dark}}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
-body{background:var(--bg);color:var(--ink);font:18px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;gap:16px;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));max-width:640px;margin:0 auto}
-h1{font-size:22px;margin:0}
-p{margin:0;color:var(--muted);font-size:15px}
-textarea{width:100%;min-height:140px;border:1.5px solid var(--line);border-radius:12px;padding:12px;background:var(--surface);color:var(--ink);font:inherit;resize:vertical}
-.mic{align-self:center;width:132px;height:132px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);font-size:52px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+body{background:var(--bg);color:var(--ink);font:16px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;max-width:640px;margin:0 auto;display:flex;flex-direction:column}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.hd{display:flex;align-items:center;gap:10px}
+h1{font-size:19px;margin:0;flex:1}
+.mic{width:60px;height:60px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);font-size:26px;flex:none;box-shadow:0 4px 12px rgba(0,0,0,.18)}
 .mic.live{background:var(--danger);color:#fff;animation:pulse 1.2s infinite}
-@keyframes pulse{50%{transform:scale(1.07)}}
-#estado{text-align:center;font-weight:700;color:var(--ink)}
-.row{display:flex;gap:10px}
-.btn{flex:1;border:0;border-radius:12px;padding:14px;font:inherit;font-weight:800;text-align:center;text-decoration:none}
+@keyframes pulse{50%{transform:scale(1.08)}}
+#estado{font-size:13px;font-weight:700;color:var(--muted)}
+textarea{width:100%;height:62px;border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface);color:var(--ink);font:inherit;resize:vertical}
+.row{display:flex;gap:8px}
+.btn{flex:1;border:0;border-radius:10px;padding:11px;font:inherit;font-weight:800;text-align:center;text-decoration:none}
 .pri{background:var(--accent);color:var(--accent-ink)}
 .sec{background:var(--surface);color:var(--muted);border:1.5px solid var(--line)}
-.err{color:var(--danger);font-weight:700}
+.err{color:var(--danger)}
+main{padding:14px 10px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+.frame{border:2px solid var(--c);border-radius:12px;padding:12px 6px 6px;position:relative}
+.ft{position:absolute;top:-10px;left:10px;background:var(--bg);padding:0 5px;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--c)}
+.bricks{display:flex;flex-wrap:wrap;gap:8px}
+.b{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:6px;padding:5px 8px;font:inherit;font-size:14px;font-weight:600}
+.b.on{background:var(--s);border-color:var(--s);color:#fff}
+.b.dic{outline:3px solid var(--hi);outline-offset:1px;font-weight:800}
+.q{font-size:11px;font-weight:800;background:rgba(0,0,0,.18);border-radius:8px;padding:0 5px}
+.b.dic .q.n{background:var(--hi);color:#1b1b1b}
+.new{border-style:dashed}
+.legend{font-size:12px;color:var(--muted);margin:0 4px}
 </style>
 </head>
 <body>
-<h1 id="titulo">Dictar la lista</h1>
-<button class="mic" id="mic" aria-label="Hablar">🎤</button>
-<div id="estado">Toca el micrófono y di los productos</div>
-<textarea id="texto" placeholder="Por ejemplo: dos leches, pan, plátanos para Lucía y lejía en Lidl"></textarea>
-<p>Puedes hablar varias veces: se va añadiendo. También puedes corregir el texto.</p>
-<div class="row"><a class="btn sec" id="cancelar" href="#">Cancelar</a><a class="btn pri" id="listo" href="#">Listo</a></div>
+<div class="top">
+  <div class="hd"><h1 id="titulo">Dictar la lista</h1><button class="mic" id="mic" aria-label="Hablar">🎤</button></div>
+  <div id="estado">Toca el micrófono y di los productos</div>
+  <textarea id="texto" placeholder="Por ejemplo: dos leches, pan, plátanos para Lucía y lejía en Lidl"></textarea>
+  <div class="row"><a class="btn sec" id="cancelar" href="#">Cancelar</a><a class="btn pri" id="listo" href="#">Listo</a></div>
+</div>
+<main id="cat"></main>
+<script src="voz.js"></script>
 <script>
 (function () {
   var q = new URLSearchParams(location.search);
   var modo = q.get('modo') === 'productos' ? 'productos' : 'lista';
   var vuelta = q.get('vuelta') || '';
-  // Solo se vuelve a la app de la hoja (Apps Script)
-  if (!/^https:\/\/script\.google\.com\/[^\s]*$/.test(vuelta)) vuelta = '';
-  var ta = document.getElementById('texto'), mic = document.getElementById('mic'), est = document.getElementById('estado');
+  if (!/^https:\/\/script\.google\.com\/[^\s]*$/.test(vuelta)) vuelta = '';   // solo se vuelve a la app de la hoja
+  var ta = document.getElementById('texto'), mic = document.getElementById('mic'), est = document.getElementById('estado'), cat = document.getElementById('cat');
   document.getElementById('titulo').textContent = modo === 'lista' ? 'Dictar la lista' : 'Dictar productos nuevos';
   ta.value = q.get('texto') || '';
+
+  /* ---- catálogo que manda la app (tras #d=) ---- */
+  var snap = [];
+  try { var h = location.hash.match(/[#&]d=([^&]*)/); if (h) snap = JSON.parse(decodeURIComponent(h[1])); } catch (e) { snap = []; }
+  var prods = [];
+  snap.forEach(function (c) { (c[2] || []).forEach(function (p) { prods.push({ nombre: p[0], activo: true, en: p[1] || '', qty: p[2] || 0 }); }); });
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  function pinta() {
+    var V = window.CestaVoz, dic = {}, nuevos = [];
+    if (V) V.parse(ta.value).forEach(function (it) {
+      var m = V.match(it.name, prods);
+      if (m.exact) dic[m.exact.nombre] = (dic[m.exact.nombre] || 0) + it.qty;
+      else nuevos.push({ n: it.name.charAt(0).toUpperCase() + it.name.slice(1), q: it.qty, dudas: m.options.length });
+    });
+    var html = '';
+    if (nuevos.length) html += '<div class="frame" style="--c:var(--hi)"><span class="ft">Nuevos o con dudas (te pregunto al volver)</span><div class="bricks">' +
+      nuevos.map(function (x) { return '<span class="b dic new">' + esc(x.n) + (x.q > 1 ? ' <span class="q n">×' + x.q + '</span>' : '') + '</span>'; }).join('') + '</div></div>';
+    snap.forEach(function (c) {
+      html += '<div class="frame" style="--c:' + esc(c[1]) + '"><span class="ft">' + esc(c[0]) + '</span><div class="bricks">' + (c[2] || []).map(function (p) {
+        var on = !!p[1], d = dic[p[0]];
+        return '<button class="b' + (on ? ' on' : '') + (d ? ' dic' : '') + '"' + (on ? ' style="--s:' + esc(p[1]) + '"' : '') + ' data-n="' + esc(p[0]) + '">' + esc(p[0]) +
+          (on && p[2] > 1 ? ' <span class="q">' + p[2] + '</span>' : '') + (d ? ' <span class="q n">' + (d > 1 ? '×' + d : '✓') + '</span>' : '') + '</button>';
+      }).join('') + '</div></div>';
+    });
+    if (snap.length) html += '<p class="legend">En color, lo que ya está en la lista. Con borde amarillo, lo que acabas de dictar. Toca un producto para añadirlo al texto.</p>';
+    cat.innerHTML = html;
+  }
+  cat.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-n]'); if (!b || b.classList.contains('dic')) return;
+    ta.value = (ta.value.trim() ? ta.value.trim().replace(/,\s*$/, '') + ', ' : '') + b.dataset.n.toLowerCase();
+    pinta();
+  });
+  ta.addEventListener('input', pinta);
+  pinta();
+
   function volver(conTexto) {
     if (!vuelta) { est.innerHTML = '<span class="err">No sé a qué app volver. Abre la Cesta y vuelve a intentarlo.</span>'; return; }
-    var u = vuelta + (vuelta.indexOf('?') >= 0 ? '&' : '?') + (conTexto ? 'dictado=' + encodeURIComponent(ta.value.trim()) + '&modo=' + modo : 'modo=' + modo);
-    location.replace(u);
+    location.replace(vuelta + (vuelta.indexOf('?') >= 0 ? '&' : '?') + (conTexto ? 'dictado=' + encodeURIComponent(ta.value.trim()) + '&' : '') + 'modo=' + modo);
   }
   document.getElementById('listo').addEventListener('click', function (e) { e.preventDefault(); parar(); volver(true); });
   document.getElementById('cancelar').addEventListener('click', function (e) { e.preventDefault(); parar(); volver(false); });
 
+  /* ---- micrófono ---- */
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition, rec = null;
-  if (!SR) { mic.style.display = 'none'; est.textContent = 'Este navegador no deja dictar aquí: usa el micrófono del teclado.'; ta.focus(); return; }
   function parar() { if (rec) { try { rec.stop(); } catch (e) {} } }
+  if (!SR) { mic.style.display = 'none'; est.textContent = 'Este navegador no deja dictar aquí: usa el micrófono del teclado.'; return; }
   function empezar() {
     if (rec) { parar(); return; }
     rec = new SR(); rec.lang = 'es-ES'; rec.interimResults = true; rec.continuous = false;
@@ -59,18 +107,18 @@ textarea{width:100%;min-height:140px;border:1.5px solid var(--line);border-radiu
     rec.onresult = function (e) {
       var t = ''; for (var i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
       t = t.trim(); if (!t) return;
-      ta.value = (base ? base.replace(/,\s*$/, '') + ', ' : '') + t;
+      ta.value = (base ? base.replace(/,\s*$/, '') + ', ' : '') + t; pinta();
     };
     rec.onerror = function (e) {
       est.innerHTML = /not-allowed|service-not-allowed/.test(e.error)
-        ? '<span class="err">Hay que dar permiso al micrófono. Toca el candado de la barra de direcciones › Permisos › Micrófono.</span>'
+        ? '<span class="err">Hay que dar permiso al micrófono: candado de la barra de direcciones › Permisos › Micrófono.</span>'
         : e.error === 'no-speech' ? 'No te he oído. Toca el micrófono otra vez.' : '<span class="err">No ha funcionado (' + e.error + '). Prueba otra vez o usa el teclado.</span>';
     };
     rec.onend = function () { rec = null; mic.classList.remove('live'); if (/Escuchando/.test(est.textContent)) est.textContent = 'Toca el micrófono para seguir, o Listo.'; };
     try { rec.start(); mic.classList.add('live'); est.textContent = 'Escuchando…'; } catch (e) { rec = null; }
   }
   mic.addEventListener('click', empezar);
-  empezar(); // si el navegador lo permite sin tocar, empieza ya
+  empezar();
 })();
 </script>
 </body>

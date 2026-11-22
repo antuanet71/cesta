@@ -439,7 +439,9 @@ function vozAnalyze(text, mode) {
 }
 function vozOutUrl() {
   const sh = S.sheet || {};
-  return VOZ_URL + '?modo=' + (sh.mode || 'lista') + '&texto=' + encodeURIComponent(sh.text || '') + '&vuelta=' + encodeURIComponent(F().appUrl || '');
+  // El catálogo va tras «#» (no sale del móvil): la página de dictado lo enseña mientras hablas
+  const snap = cats().map(c => [c.nombre, c.color, act(F().productos).filter(p => p.categoriaId === c.id).map(p => { const r = inList(p.id); return r ? [p.nombre, (superById(r.superId) || {}).color || '#666', Number(r.cantidad) || 1] : [p.nombre]; })]);
+  return VOZ_URL + '?modo=' + (sh.mode || 'lista') + '&texto=' + encodeURIComponent(sh.text || '') + '&vuelta=' + encodeURIComponent(F().appUrl || '') + '#d=' + encodeURIComponent(JSON.stringify(snap));
 }
 // Al volver de la página de dictado, la URL trae ?dictado=…&modo=…
 let vozBack = null;
